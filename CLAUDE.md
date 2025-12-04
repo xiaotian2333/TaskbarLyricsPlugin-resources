@@ -23,8 +23,11 @@ dotnet build
 # 运行项目（开发模式）
 dotnet run
 
-# 发布为可执行文件
+# 发布为自包含的可执行文件（包含 .NET 运行时）
 dotnet publish -c Release -r win-x64 --self-contained
+
+# 发布为依赖运行时的版本（需要目标机器安装 .NET 8 运行时）
+dotnet publish -c Release -r win-x64 --self-contained false
 
 # 监控调试日志（需要先启动应用程序）
 ./watchlog.bat
@@ -99,6 +102,8 @@ dotnet publish -c Release -r win-x64 --self-contained
 5. **实时控制**：可以通过 API 控制音乐播放
 6. **高度可定制**：字体、颜色、对齐方式、翻译等均可自定义
 7. **智能日志**：支持多级别日志和重复消息过滤
+8. **歌词过滤**：使用正则表达式过滤非歌词内容（如制作人信息）
+9. **歌曲标题显示**：自动在歌词列表第一项显示当前歌曲标题
 
 ### 开发注意事项
 
@@ -109,6 +114,28 @@ dotnet publish -c Release -r win-x64 --self-contained
 5. **内存管理**：歌词渲染缓存需要定期清理以避免内存泄漏
 6. **日志级别**：生产环境默认关闭日志，开发时可通过配置启用
 7. **全屏检测**：使用 Windows Forms 定时器，每秒检查一次全屏状态
+8. **歌词过滤性能**：过滤逻辑在歌词解析阶段执行，避免运行时性能问题
+9. **正则表达式配置**：用户可自定义过滤规则，默认规则过滤包含冒号的非歌词行
+
+## 架构设计要点
+
+### 歌词处理流程
+1. **歌词获取**：`LyricsApiService` 从本地 API 服务器获取歌词文本
+2. **歌词解析**：`LyricsRenderer.ParseLyrics` 解析 LRC 格式歌词
+3. **歌词过滤**：在解析阶段应用 `ShouldFilterLyricsText` 过滤非歌词内容
+4. **标题插入**：将歌曲标题作为独立行插入到歌词列表开头
+5. **渲染显示**：`MainWindow` 使用渲染后的歌词列表进行显示
+
+### 歌词过滤实现
+- **配置位置**：`ConfigResponse.EnableLyricsFilter` 和 `ConfigResponse.LyricsFilterRegex`
+- **过滤时机**：在 `ParseLyricsLineGroup` 中解析后立即过滤
+- **性能优化**：过滤只在解析时执行一次，避免运行时重复计算
+- **默认规则**：过滤制作人信息、许可声明等非歌词内容
+
+### 歌曲标题管理
+- **标题跟踪**：`MainWindow._lastSongTitle` 跟踪当前播放歌曲
+- **更新时机**：在 `UpdateNowPlaying` 中检测歌曲变化
+- **插入位置**：作为歌词列表的第一项（StartTime = 0）
 
 ### 窗口 XAML 文件
 - `MainWindow.xaml` - 主歌词显示窗口
