@@ -128,15 +128,15 @@ namespace TaskbarLyrics
                 
                 if (string.IsNullOrEmpty(cleanText))
                 {
-                    Debug.WriteLine("No text content after removing timestamps");
+                    Logger.Error("移除时间戳后没有文本内容");
                     return;
                 }
 
-                Debug.WriteLine($"Clean text: '{cleanText}'");
+                Logger.Debug($"移除时间戳后的文本: '{cleanText}'");
 
                 var textParts = SplitTextByCharacters(cleanText);
                 
-                Debug.WriteLine($"Split into {textParts.Length} text parts");
+                 Logger.Debug($"拆分为 {textParts.Length} 个文本部分");
 
                 if (textParts.Length == 0)
                     return;
@@ -173,19 +173,15 @@ namespace TaskbarLyrics
                     
                     wordTimings.Add(wordTiming);
                     currentTime += charDuration + wordSpacing;
-                    
-                    Debug.WriteLine($"Word {i}: '{wordTiming.Text}' Start={wordTiming.StartTime} End={wordTiming.EndTime}");
                 }
 
                 lyricsLine.OriginalText = cleanText;
                 lyricsLine.WordTimings = wordTimings;
                 lyricsLine.EndTime = currentTime;
-                
-                Debug.WriteLine($"Successfully parsed lyrics with {wordTimings.Count} words, total duration: {lyricsLine.EndTime - lyricsLine.StartTime}ms");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error parsing lyrics: {ex.Message}");
+                Logger.Error($"解析歌词时出错: {ex.Message}");
                 lyricsLine.OriginalText = TimeStampRegex.Replace(lyricLine, "").Trim();
             }
         }
@@ -238,10 +234,7 @@ namespace TaskbarLyrics
         }
 
         public static Panel CreateDualLineLyricsVisual(LyricsLine lyricsLine, LyricsConfig config, double maxWidth, int currentPosition = 0)
-        {
-            Debug.WriteLine($"Creating lyrics visual. WordTimings count: {lyricsLine.WordTimings?.Count}");
-            Debug.WriteLine($"Current position: {currentPosition}, Highlight color: {config.HighlightColor}");
-            
+        {        
             HorizontalAlignment panelAlignment = HorizontalAlignment.Center;
             switch (config.Alignment.ToLower())
             {
@@ -265,9 +258,7 @@ namespace TaskbarLyrics
             };
 
             if (lyricsLine.WordTimings != null && lyricsLine.WordTimings.Count > 0)
-            {
-                Debug.WriteLine($"Rendering word timing lyrics with {lyricsLine.WordTimings.Count} words at position {currentPosition}");
-                
+            {                
                 var originalPanel = CreateWordTimingLineVisual(lyricsLine.WordTimings, config, false, currentPosition, panelAlignment);
                 mainPanel.Children.Add(originalPanel);
 
@@ -283,9 +274,7 @@ namespace TaskbarLyrics
                 }
             }
             else
-            {
-                Debug.WriteLine("No word timings available, falling back to regular lyrics");
-                
+            {                
                 if (!string.IsNullOrEmpty(lyricsLine.OriginalText))
                 {
                     var originalPanel = CreateRegularLineVisual(lyricsLine.OriginalText, config, false, panelAlignment);
@@ -321,8 +310,6 @@ namespace TaskbarLyrics
             int fontSize = GetFontSize(config, isTranslation);
             string fontFamily = GetFontFamily(config);
 
-            Debug.WriteLine($"Word timing line visual - Default: {defaultTextBrush}, Highlight: {highlightedTextBrush}, FontSize: {fontSize}, Alignment: {alignment}");
-
             UpdateProgressCache(wordTimings, currentPosition);
 
             foreach (var wordTiming in wordTimings)
@@ -337,17 +324,26 @@ namespace TaskbarLyrics
                     continue;
                 }
 
-                double progress = _wordProgressCache.ContainsKey(wordTiming) ? _wordProgressCache[wordTiming] : 0;
+                FrameworkElement wordElement;
+                if (highlightedTextBrush == null)
+                {
+                    // 如果禁用高亮，创建简单的文本元素
+                    wordElement = CreateSimpleWordElement(wordTiming.Text, fontFamily, fontSize, defaultTextBrush);
+                }
+                else
+                {
+                    // 否则创建带高亮效果的元素
+                    double progress = _wordProgressCache.ContainsKey(wordTiming) ? _wordProgressCache[wordTiming] : 0;
+                    wordElement = CreateSmoothWordElement(
+                        wordTiming.Text,
+                        fontFamily,
+                        fontSize,
+                        defaultTextBrush,
+                        highlightedTextBrush,
+                        progress
+                    );
+                }
 
-                var wordElement = CreateSmoothWordElement(
-                    wordTiming.Text, 
-                    fontFamily, 
-                    fontSize, 
-                    defaultTextBrush, 
-                    highlightedTextBrush, 
-                    progress
-                );
-                
                 panel.Children.Add(wordElement);
             }
 
@@ -507,6 +503,22 @@ namespace TaskbarLyrics
             return grid;
         }
 
+        private static FrameworkElement CreateSimpleWordElement(string text, string fontFamily, int fontSize, Brush textColor)
+        {
+            var textBlock = new TextBlock
+            {
+                Text = text,
+                FontFamily = new FontFamily(fontFamily),
+                FontSize = fontSize,
+                Foreground = textColor,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                TextWrapping = TextWrapping.NoWrap,
+                Margin = new Thickness(0)
+            };
+            return textBlock;
+        }
+
         private static Panel CreateRegularLineVisual(string text, LyricsConfig config, bool isTranslation, HorizontalAlignment alignment)
         {
             var panel = new StackPanel
@@ -537,21 +549,22 @@ namespace TaskbarLyrics
 
         private static Brush GetHighlightBrush(LyricsConfig config)
         {
+            // 检查是否禁用高亮
+            if (string.IsNullOrEmpty(config.HighlightColor) || config.HighlightColor == "DISABLED")
+            {
+                return null; // 返回null表示不使用高亮
+            }
+
             try
             {
-                if (!string.IsNullOrEmpty(config.HighlightColor))
-                {
-                    var brush = (Brush)new BrushConverter().ConvertFromString(config.HighlightColor);
-                    Debug.WriteLine($"Using highlight color: {config.HighlightColor}");
-                    return brush;
-                }
+                var brush = (Brush)new BrushConverter().ConvertFromString(config.HighlightColor);
+                
+                return brush;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error parsing highlight color: {ex.Message}");
+                Logger.Error($"解析高亮颜色时出错: {ex.Message}");
             }
-            
-            Debug.WriteLine("Using default highlight color: Cyan");
             return Brushes.Cyan;
         }
 

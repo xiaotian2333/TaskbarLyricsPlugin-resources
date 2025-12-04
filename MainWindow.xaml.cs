@@ -22,6 +22,7 @@ namespace TaskbarLyrics
         private string _lastLyricsText = "";
         private bool _forceRefresh = false;
         private int _currentPosition = 0;
+        private int _lastLyricsLineCount = 0; // 用于避免重复的歌词解析日志
         private bool _isPlaying = false;
         private bool _isMouseOver = false;
         private DispatcherTimer _mouseLeaveTimer;
@@ -152,7 +153,7 @@ namespace TaskbarLyrics
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"NowPlaying Error: {ex.Message}");
+                Logger.Error($"获取当前播放信息时出错: {ex.Message}");
             }
         }
 
@@ -226,13 +227,13 @@ namespace TaskbarLyrics
                 if (!FullScreenDetector.IsFullScreenActive)
                 {
                     FullScreenDetector.Start();
-                    Debug.WriteLine("配置更新：全屏检测已启动");
+                    Logger.Info("配置更新：全屏检测已启动");
                 }
             }
             else
             {
                 FullScreenDetector.Stop();
-                Debug.WriteLine("配置更新：全屏检测已停止");
+                Logger.Info("配置更新：全屏检测已停止");
 
                 // 如果之前因为全屏而隐藏了窗口，现在要显示出来
                 if (this.Visibility == Visibility.Collapsed)
@@ -266,7 +267,7 @@ namespace TaskbarLyrics
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Error applying background color: {ex.Message}");
+                    Logger.Error($"应用背景颜色时出错: {ex.Message}");
                     LyricsContainer.Background = Brushes.Transparent;
                 }
             }
@@ -304,7 +305,7 @@ namespace TaskbarLyrics
             LyricsContainer.Margin = margin;
             ControlPanelBorder.Margin = margin;
             
-            Debug.WriteLine($"Alignment applied: {config.Alignment}, Margin: {margin}");
+            // 移除频繁的对齐方式日志输出
         }
 
         protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
@@ -344,12 +345,17 @@ namespace TaskbarLyrics
                 _forceRefresh = false;
 
                 _lyricsLines = LyricsRenderer.ParseLyrics(currentLyrics);
-                
-                Debug.WriteLine($"Parsed {_lyricsLines.Count} lyrics lines");
+
+                // 只在歌词行数变化时记录日志
+                if (_lyricsLines.Count != _lastLyricsLineCount)
+                {
+                    Logger.Info($"已加载 {_lyricsLines.Count} 行歌词");
+                    _lastLyricsLineCount = _lyricsLines.Count;
+                }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error updating lyrics: {ex.Message}");
+                Logger.Error($"更新歌词时出错: {ex.Message}");
                 _forceRefresh = false;
             }
         }
@@ -494,7 +500,7 @@ namespace TaskbarLyrics
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error in Play/Pause: {ex.Message}");
+                Logger.Error($"播放/暂停时出错: {ex.Message}");
             }
         }
 
@@ -508,7 +514,7 @@ namespace TaskbarLyrics
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error in Next Track: {ex.Message}");
+                Logger.Error($"下一曲时出错: {ex.Message}");
             }
         }
 
@@ -522,7 +528,7 @@ namespace TaskbarLyrics
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error in Previous Track: {ex.Message}");
+                Logger.Error($"上一曲时出错: {ex.Message}");
             }
         }
 
@@ -532,14 +538,14 @@ namespace TaskbarLyrics
 
             // 总是先启动检测，OnFullScreenStatusChanged 会根据配置决定是否响应
             FullScreenDetector.Start();
-            Logger.Info($"全屏检测已启动，配置 HideOnFullscreen: {ConfigManager.CurrentConfig.HideOnFullscreen}");
+            Logger.Info($"全屏检测已启动，配置全屏时隐藏: {ConfigManager.CurrentConfig.HideOnFullscreen}");
         }
 
         private void OnFullScreenStatusChanged(object sender, bool isFullScreen)
         {
             if (_isClosing) return;
 
-            Logger.Info($"全屏状态变化: {isFullScreen}, HideOnFullscreen配置: {ConfigManager.CurrentConfig.HideOnFullscreen}, 当前窗口可见性: {this.Visibility}");
+            Logger.Info($"全屏状态变化: {isFullScreen}, 配置全屏时隐藏: {ConfigManager.CurrentConfig.HideOnFullscreen}, 当前窗口可见性: {this.Visibility}");
 
             // 只在配置启用时响应全屏状态变化
             if (!ConfigManager.CurrentConfig.HideOnFullscreen)

@@ -232,9 +232,10 @@
 
                                 <TextBlock Grid.Row="0" Grid.Column="0" Text="高亮颜色:" Style="{StaticResource SettingLabel}"/>
                                 <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="5,3">
-                                    <ComboBox x:Name="HighlightColorComboBox" Width="120" 
+                                    <ComboBox x:Name="HighlightColorComboBox" Width="120"
                                               Style="{StaticResource ModernComboBox}"
                                               SelectionChanged="HighlightColorComboBox_SelectionChanged">
+                                        <ComboBoxItem Content="无" Tag="DISABLED"/>
                                         <ComboBoxItem Content="青色" Tag="#FF00FFFF"/>
                                         <ComboBoxItem Content="黄色" Tag="#FFFFFF00"/>
                                         <ComboBoxItem Content="绿色" Tag="#FF00FF00"/>
@@ -242,14 +243,14 @@
                                         <ComboBoxItem Content="橙色" Tag="#FFFFA500"/>
                                         <ComboBoxItem Content="金色" Tag="#FFFFD700"/>
                                     </ComboBox>
-                                    <Button Content="自定义" Margin="10,0,0,0" 
+                                    <Button Content="自定义" Margin="10,0,0,0"
                                             Style="{StaticResource SecondaryButton}"
                                             Click="CustomHighlightColor_Click"/>
                                 </StackPanel>
 
                                 <TextBlock Grid.Row="1" Grid.Column="0" Text="背景颜色:" Style="{StaticResource SettingLabel}"/>
                                 <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="5,3">
-                                    <ComboBox x:Name="BackgroundColorComboBox" Width="120" 
+                                    <ComboBox x:Name="BackgroundColorComboBox" Width="120"
                                               Style="{StaticResource ModernComboBox}"
                                               SelectionChanged="BackgroundColorComboBox_SelectionChanged">
                                         <ComboBoxItem Content="透明" Tag="#00000000"/>
@@ -257,7 +258,7 @@
                                         <ComboBoxItem Content="黑色" Tag="#FF000000"/>
                                         <ComboBoxItem Content="深灰" Tag="#FF202020"/>
                                     </ComboBox>
-                                    <Button Content="自定义" Margin="10,0,0,0" 
+                                    <Button Content="自定义" Margin="10,0,0,0"
                                             Style="{StaticResource SecondaryButton}"
                                             Click="CustomBackgroundColor_Click"/>
                                 </StackPanel>

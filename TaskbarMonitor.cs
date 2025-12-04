@@ -133,11 +133,11 @@ namespace TaskbarLyrics
                 SetWindowPos(hwnd, (IntPtr)HWND_TOPMOST, 0, 0, 0, 0, 
                     SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
                 
-                Debug.WriteLine("Window forced to show");
+                Logger.Info("窗口已强制显示");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error forcing window show: {ex.Message}");
+                Logger.Error($"强制显示窗口时出错: {ex.Message}");
             }
         }
 
@@ -171,11 +171,11 @@ namespace TaskbarLyrics
                     WS_EX_TOOLWINDOW |
                     WS_EX_TOPMOST);
                 
-                Debug.WriteLine("Mouse events enabled for window");
+                // 移除频繁的DEBUG日志输出
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error enabling mouse events: {ex.Message}");
+                Logger.Error($"启用鼠标事件时出错: {ex.Message}");
             }
         }
 
@@ -195,11 +195,11 @@ namespace TaskbarLyrics
                     WS_EX_TOOLWINDOW |
                     WS_EX_TOPMOST);
                 
-                Debug.WriteLine("Mouse events disabled for window");
+                // 移除频繁的DEBUG日志输出
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error disabling mouse events: {ex.Message}");
+                Logger.Error($"禁用鼠标事件时出错: {ex.Message}");
             }
         }
     }

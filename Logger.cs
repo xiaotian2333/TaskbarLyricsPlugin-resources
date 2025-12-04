@@ -10,6 +10,9 @@ namespace TaskbarLyrics
             "TaskbarLyrics", "debug.log");
 
         private static readonly object _lock = new object();
+        private static string _lastMessage = string.Empty;
+        private static DateTime _lastMessageTime = DateTime.MinValue;
+        private static readonly TimeSpan _duplicateThreshold = TimeSpan.FromSeconds(5); // 5秒内的重复消息会被过滤
 
         static Logger()
         {
@@ -52,6 +55,15 @@ namespace TaskbarLyrics
             {
                 lock (_lock)
                 {
+                    // 过滤重复的消息
+                    if (message == _lastMessage && DateTime.Now - _lastMessageTime < _duplicateThreshold)
+                    {
+                        return; // 跳过重复的消息
+                    }
+
+                    _lastMessage = message;
+                    _lastMessageTime = DateTime.Now;
+
                     var logEntry = $"[{DateTime.Now:HH:mm:ss}] {level}: {message}{Environment.NewLine}";
                     File.AppendAllText(LogPath, logEntry);
                 }

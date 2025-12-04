@@ -56,6 +56,12 @@ namespace TaskbarLyrics
             SelectColorInComboBox(FontColorComboBox, config.FontColor);
             
             SelectColorInComboBox(HighlightColorComboBox, config.HighlightColor);
+
+            // 如果没有找到匹配的颜色（可能是因为配置值不在列表中），选择"无"
+            if (HighlightColorComboBox.SelectedItem == null)
+            {
+                HighlightColorComboBox.SelectedIndex = 0; // 选择第一个选项"无"
+            }
             
             foreach (ComboBoxItem item in AlignmentComboBox.Items)
             {

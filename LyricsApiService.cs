@@ -33,7 +33,7 @@ namespace TaskbarLyrics
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error getting lyrics from {LyricsApiUrl}: {ex.Message}");
+                Debug.WriteLine($"获取歌词时出错: {ex.Message}");
                 try
                 {
                     var response = await _httpClient.GetStringAsync(LyricsPwApiUrl);
@@ -41,7 +41,7 @@ namespace TaskbarLyrics
                 }
                 catch (Exception ex2)
                 {
-                    Debug.WriteLine($"Error getting lyrics from backup API {LyricsPwApiUrl}: {ex2.Message}");
+                    Debug.WriteLine($"从联网搜索API {LyricsPwApiUrl} 获取歌词时出错: {ex2.Message}");
                     return new LyricsResponse { Status = "error" };
                 }
             }
@@ -57,7 +57,7 @@ namespace TaskbarLyrics
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error getting now playing: {ex.Message}");
+                Debug.WriteLine($"获取当前播放信息时出错: {ex.Message}");
                 return new NowPlayingResponse { Status = "error" };
             }
         }
@@ -66,14 +66,13 @@ namespace TaskbarLyrics
         {
             try
             {
-                Debug.WriteLine($"Calling Play/Pause API (GET): {PlayPauseApiUrl}");
+                // 移除频繁的API调用日志输出
                 var response = await _httpClient.GetAsync(PlayPauseApiUrl);
-                Debug.WriteLine($"Play/Pause response status: {response.StatusCode}");
                 return response.IsSuccessStatusCode;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error in Play/Pause: {ex.Message}");
+                Debug.WriteLine($"播放/暂停时出错: {ex.Message}");
                 return false;
             }
         }
@@ -82,14 +81,13 @@ namespace TaskbarLyrics
         {
             try
             {
-                Debug.WriteLine($"Calling Next Track API (GET): {NextTrackApiUrl}");
+                // 移除频繁的API调用日志输出
                 var response = await _httpClient.GetAsync(NextTrackApiUrl);
-                Debug.WriteLine($"Next Track response status: {response.StatusCode}");
                 return response.IsSuccessStatusCode;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error in Next Track: {ex.Message}");
+                Debug.WriteLine($"下一曲时出错: {ex.Message}");
                 return false;
             }
         }
@@ -98,14 +96,13 @@ namespace TaskbarLyrics
         {
             try
             {
-                Debug.WriteLine($"Calling Previous Track API (GET): {PreviousTrackApiUrl}");
+                // 移除频繁的API调用日志输出
                 var response = await _httpClient.GetAsync(PreviousTrackApiUrl);
-                Debug.WriteLine($"Previous Track response status: {response.StatusCode}");
                 return response.IsSuccessStatusCode;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error in Previous Track: {ex.Message}");
+                Debug.WriteLine($"上一曲时出错: {ex.Message}");
                 return false;
             }
         }
