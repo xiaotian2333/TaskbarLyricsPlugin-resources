@@ -19,6 +19,7 @@ namespace TaskbarLyrics
         private static DispatcherTimer _animationTimer;
         private static Dictionary<WordTiming, double> _wordProgressCache = new Dictionary<WordTiming, double>();
         private static int _lastPosition = -1;
+        private static Regex _filterRegex = null;
 
         static LyricsRenderer()
         {
@@ -121,6 +122,12 @@ namespace TaskbarLyrics
                 if (lines.Count > 1)
                 {
                     lyricsLine.TranslationText = lines[1];
+                }
+
+                // 检查是否应该过滤这行歌词
+                if (ShouldFilterLyricsText(lyricsLine.OriginalText, lyricsLine.TranslationText))
+                {
+                    return null;
                 }
             }
 
@@ -635,7 +642,7 @@ namespace TaskbarLyrics
             {
                 var currentLine = lyricsLines[i];
                 int nextLineStartTime = (i < lyricsLines.Count - 1) ? lyricsLines[i + 1].StartTime : int.MaxValue;
-                
+
                 if (currentPosition >= currentLine.StartTime && currentPosition < nextLineStartTime)
                 {
                     return currentLine;
@@ -650,9 +657,56 @@ namespace TaskbarLyrics
             return lyricsLines[lyricsLines.Count - 1];
         }
 
+        private static bool ShouldFilterLyricsText(string originalText, string translationText)
+        {
+            // 检查配置是否启用过滤
+            var config = ConfigManager.CurrentConfig;
+            if (!config.EnableLyricsFilter || string.IsNullOrEmpty(config.LyricsFilterRegex))
+            {
+                return false;
+            }
+
+            // 更新过滤正则表达式
+            if (_filterRegex == null || _filterRegex.ToString() != config.LyricsFilterRegex)
+            {
+                try
+                {
+                    _filterRegex = new Regex(config.LyricsFilterRegex, RegexOptions.Compiled);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"歌词过滤正则表达式无效: {ex.Message}");
+                    return false;
+                }
+            }
+
+            // 检查原文是否匹配过滤规则
+            if (!string.IsNullOrEmpty(originalText))
+            {
+                if (_filterRegex.IsMatch(originalText))
+                {
+                    Logger.Debug($"过滤歌词行: {originalText}");
+                    return true;
+                }
+            }
+
+            // 检查译文是否匹配过滤规则
+            if (!string.IsNullOrEmpty(translationText) && config.ShowTranslation)
+            {
+                if (_filterRegex.IsMatch(translationText))
+                {
+                    Logger.Debug($"过滤歌词译文行: {translationText}");
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public static void ClearCache()
         {
             _wordProgressCache.Clear();
+            _filterRegex = null;
         }
     }
 }

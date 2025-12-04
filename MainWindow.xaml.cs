@@ -235,6 +235,9 @@ namespace TaskbarLyrics
             ApplyConfig();
             _forceRefresh = true;
 
+            // 清理歌词渲染缓存，确保过滤规则立即生效
+            LyricsRenderer.ClearCache();
+
             // 根据配置重新设置全屏检测
             if (ConfigManager.CurrentConfig.HideOnFullscreen)
             {

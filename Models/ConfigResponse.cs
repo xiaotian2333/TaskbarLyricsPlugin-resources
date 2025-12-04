@@ -45,5 +45,11 @@ namespace TaskbarLyrics.Models
 
         [JsonPropertyName("log_level")]
         public string LogLevel { get; set; } = "Auto"; // Auto, Off, Error, Info, Debug
+
+        [JsonPropertyName("enable_lyrics_filter")]
+        public bool EnableLyricsFilter { get; set; } = true;
+
+        [JsonPropertyName("lyrics_filter_regex")]
+        public string LyricsFilterRegex { get; set; } = "^([^：]*)：.*$|^([^:]*):.*$|^([^翻唱]*)翻唱.*$|^([^许可]*)许可.*$|^([^音乐人]*)音乐人.*$|^([^国风]*)国风.*$|^([^纯音乐]*)纯音乐.*$";
     }
 }

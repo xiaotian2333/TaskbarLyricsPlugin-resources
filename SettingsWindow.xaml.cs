@@ -89,6 +89,10 @@ namespace TaskbarLyrics
 
             HideOnFullscreenCheckBox.IsChecked = config.HideOnFullscreen;
 
+            // 加载歌词过滤配置
+            EnableLyricsFilterCheckBox.IsChecked = config.EnableLyricsFilter;
+            LyricsFilterRegexTextBox.Text = config.LyricsFilterRegex ?? "";
+
             // 加载日志级别配置
             SelectColorInComboBox(LogLevelComboBox, config.LogLevel?.ToLower() ?? "auto");
         }
@@ -152,6 +156,10 @@ namespace TaskbarLyrics
             }
 
             config.HideOnFullscreen = HideOnFullscreenCheckBox.IsChecked ?? true;
+
+            // 保存歌词过滤配置
+            config.EnableLyricsFilter = EnableLyricsFilterCheckBox.IsChecked ?? true;
+            config.LyricsFilterRegex = LyricsFilterRegexTextBox.Text?.Trim() ?? "";
 
             if (LogLevelComboBox.SelectedItem is ComboBoxItem logLevelItem)
             {
@@ -219,12 +227,6 @@ namespace TaskbarLyrics
         {
             PreviewTranslation.Visibility = ShowTranslationCheckBox.IsChecked == true ?
                 Visibility.Visible : Visibility.Collapsed;
-        }
-
-        private void HideOnFullscreenCheckBox_Changed(object sender, RoutedEventArgs e)
-        {
-            // 这个选项在 ApplyConfig 中处理，这里不需要额外逻辑
-            // 因为它不会影响预览效果，只影响运行时行为
         }
 
         private void LogLevelComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

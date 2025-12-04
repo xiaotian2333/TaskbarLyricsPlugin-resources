@@ -323,11 +323,32 @@
                                       FontSize="14"
                                       FontWeight="SemiBold"
                                       Foreground="#333333"
-                                      Margin="0,0,0,10"
-                                      Checked="HideOnFullscreenCheckBox_Changed"
-                                      Unchecked="HideOnFullscreenCheckBox_Changed"/>
+                                      Margin="0,0,0,10"/>
 
                             <TextBlock Text="当检测到全屏应用（如视频播放器、游戏等）时，自动隐藏歌词以免干扰。退出全屏后会自动恢复显示。"
+                                       FontSize="12"
+                                       Foreground="#666666"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,15"/>
+
+                            <CheckBox x:Name="EnableLyricsFilterCheckBox"
+                                      Content="启用歌词过滤"
+                                      FontSize="14"
+                                      FontWeight="SemiBold"
+                                      Foreground="#333333"
+                                      Margin="0,0,0,10"/>
+
+                            <TextBlock Text="过滤规则 (正则表达式):" Style="{StaticResource SettingLabel}" Margin="0,0,0,5"/>
+                            <TextBox x:Name="LyricsFilterRegexTextBox"
+                                     Height="60"
+                                     TextWrapping="Wrap"
+                                     AcceptsReturn="True"
+                                     VerticalScrollBarVisibility="Auto"
+                                     FontFamily="Consolas"
+                                     FontSize="12"
+                                     Margin="0,0,0,5"
+                                     ToolTip="支持正则表达式，用于过滤不需要显示的歌词行（如制作人信息、许可声明等）"/>
+                            <TextBlock Text="默认规则会过滤包含冒号的非歌词行（如'作曲：XXX'）以及其他特定格式的内容。"
                                        FontSize="12"
                                        Foreground="#666666"
                                        TextWrapping="Wrap"
