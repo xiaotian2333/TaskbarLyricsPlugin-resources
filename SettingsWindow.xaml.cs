@@ -12,12 +12,17 @@ namespace TaskbarLyrics
 {
     public partial class SettingsWindow : Window
     {
+        private PositionPreviewWindow _previewWindow;
+        private int _currentOffsetX = 0;
+        private int _currentOffsetY = 0;
+
         public SettingsWindow()
         {
             InitializeComponent();
             LoadCurrentConfig();
-            
+
             this.MouseDown += SettingsWindow_MouseDown;
+            this.Closing += SettingsWindow_Closing;
         }
 
         private void SettingsWindow_MouseDown(object sender, MouseButtonEventArgs e)
@@ -93,6 +98,11 @@ namespace TaskbarLyrics
             EnableLyricsFilterCheckBox.IsChecked = config.EnableLyricsFilter;
             LyricsFilterRegexTextBox.Text = config.LyricsFilterRegex ?? "";
 
+            // 加载位置偏移配置
+            _currentOffsetX = config.PositionOffsetX;
+            _currentOffsetY = config.PositionOffsetY;
+            UpdateOffsetDisplay();
+
             // 加载日志级别配置
             SelectColorInComboBox(LogLevelComboBox, config.LogLevel?.ToLower() ?? "auto");
         }
@@ -160,6 +170,10 @@ namespace TaskbarLyrics
             // 保存歌词过滤配置
             config.EnableLyricsFilter = EnableLyricsFilterCheckBox.IsChecked ?? true;
             config.LyricsFilterRegex = LyricsFilterRegexTextBox.Text?.Trim() ?? "";
+
+            // 保存位置偏移配置
+            config.PositionOffsetX = _currentOffsetX;
+            config.PositionOffsetY = _currentOffsetY;
 
             if (LogLevelComboBox.SelectedItem is ComboBoxItem logLevelItem)
             {
@@ -305,6 +319,96 @@ namespace TaskbarLyrics
                 return $"#{color.A:X2}{color.R:X2}{color.G:X2}{color.B:X2}";
             }
             return null;
+        }
+
+        private void MovePosition_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is string tag)
+            {
+                var parts = tag.Split(',');
+                if (parts.Length == 2)
+                {
+                    var direction = parts[0];
+                    var step = parts[1] == "Large" ? 20 : 1;
+
+                    switch (direction)
+                    {
+                        case "Up":
+                            _currentOffsetY -= step;
+                            break;
+                        case "Down":
+                            _currentOffsetY += step;
+                            break;
+                        case "Left":
+                            _currentOffsetX -= step;
+                            break;
+                        case "Right":
+                            _currentOffsetX += step;
+                            break;
+                    }
+
+                    UpdateOffsetDisplay();
+                    ApplyConfig();
+                    UpdatePreviewWindow();
+                }
+            }
+        }
+
+        private void ResetPosition_Click(object sender, RoutedEventArgs e)
+        {
+            _currentOffsetX = 0;
+            _currentOffsetY = 0;
+            UpdateOffsetDisplay();
+            ApplyConfig();
+            UpdatePreviewWindow();
+        }
+
+        private void PreviewPosition_Click(object sender, RoutedEventArgs e)
+        {
+            if (_previewWindow == null)
+            {
+                _previewWindow = new PositionPreviewWindow();
+            }
+
+            if (_previewWindow.IsVisible)
+            {
+                _previewWindow.HidePreview();
+            }
+            else
+            {
+                UpdatePreviewWindow();
+                _previewWindow.ShowPreview();
+            }
+        }
+
+        private void UpdateOffsetDisplay()
+        {
+            OffsetDisplayText.Text = $"X: {_currentOffsetX}, Y: {_currentOffsetY}";
+        }
+
+        private void UpdatePreviewWindow()
+        {
+            if (_previewWindow != null && _previewWindow.IsVisible)
+            {
+                // 获取任务栏位置
+                var taskbarRect = TaskbarMonitor.GetTaskbarRect();
+
+                // 设置预览窗口位置
+                _previewWindow.SetPreviewRect(
+                    taskbarRect.Left + _currentOffsetX,
+                    taskbarRect.Top + _currentOffsetY,
+                    taskbarRect.Width,
+                    taskbarRect.Height);
+            }
+        }
+
+        private void SettingsWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (_previewWindow != null)
+            {
+                _previewWindow.Close();
+                _previewWindow = null;
+            }
         }
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)

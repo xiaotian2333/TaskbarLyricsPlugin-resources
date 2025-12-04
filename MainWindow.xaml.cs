@@ -215,13 +215,13 @@ namespace TaskbarLyrics
             this.ShowActivated = false;
             this.ShowInTaskbar = false;
             this.Topmost = true;
-            
+
             this.Focusable = true;
-            
-            TaskbarMonitor.PositionWindowOnTaskbar(this);
+
+            ApplyPositionOffset();
             SetWindowTransparency();
             TaskbarMonitor.SetWindowToTaskbarLevel(this);
-            
+
             ApplyConfig();
         }
 
@@ -237,6 +237,9 @@ namespace TaskbarLyrics
 
             // 清理歌词渲染缓存，确保过滤规则立即生效
             LyricsRenderer.ClearCache();
+
+            // 应用位置偏移
+            ApplyPositionOffset();
 
             // 根据配置重新设置全屏检测
             if (ConfigManager.CurrentConfig.HideOnFullscreen)
@@ -412,7 +415,13 @@ namespace TaskbarLyrics
         private void UpdateWindowPosition()
         {
             if (_isClosing) return;
-            TaskbarMonitor.PositionWindowOnTaskbar(this);
+            ApplyPositionOffset();
+        }
+
+        private void ApplyPositionOffset()
+        {
+            var config = ConfigManager.CurrentConfig;
+            TaskbarMonitor.PositionWindowOnTaskbar(this, config.PositionOffsetX, config.PositionOffsetY);
         }
 
         protected override void OnSourceInitialized(EventArgs e)

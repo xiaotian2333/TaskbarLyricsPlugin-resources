@@ -90,10 +90,15 @@ namespace TaskbarLyrics
 
         public static void PositionWindowOnTaskbar(Window window)
         {
+            PositionWindowOnTaskbar(window, 0, 0);
+        }
+
+        public static void PositionWindowOnTaskbar(Window window, int offsetX, int offsetY)
+        {
             var taskbarRect = GetTaskbarRect();
-            
-            window.Left = taskbarRect.Left;
-            window.Top = taskbarRect.Top;
+
+            window.Left = taskbarRect.Left + offsetX;
+            window.Top = taskbarRect.Top + offsetY;
             window.Width = taskbarRect.Width;
             window.Height = taskbarRect.Height;
         }

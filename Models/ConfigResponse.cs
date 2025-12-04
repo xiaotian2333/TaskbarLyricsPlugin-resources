@@ -51,5 +51,11 @@ namespace TaskbarLyrics.Models
 
         [JsonPropertyName("lyrics_filter_regex")]
         public string LyricsFilterRegex { get; set; } = "^([^：]*)：.*$|^([^:]*):.*$|^([^翻唱]*)翻唱.*$|^([^许可]*)许可.*$|^([^音乐人]*)音乐人.*$|^([^国风]*)国风.*$|^([^纯音乐]*)纯音乐.*$";
+
+        [JsonPropertyName("position_offset_x")]
+        public int PositionOffsetX { get; set; } = 0;
+
+        [JsonPropertyName("position_offset_y")]
+        public int PositionOffsetY { get; set; } = 0;
     }
 }
