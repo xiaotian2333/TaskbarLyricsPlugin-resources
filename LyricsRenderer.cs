@@ -128,15 +128,15 @@ namespace TaskbarLyrics
                 
                 if (string.IsNullOrEmpty(cleanText))
                 {
-                    Logger.Error("移除时间戳后没有文本内容");
+                    // Logger.Error("移除时间戳后没有文本内容");
                     return;
                 }
 
-                Logger.Debug($"移除时间戳后的文本: '{cleanText}'");
+                // Logger.Debug($"移除时间戳后的文本: '{cleanText}'");
 
                 var textParts = SplitTextByCharacters(cleanText);
                 
-                 Logger.Debug($"拆分为 {textParts.Length} 个文本部分");
+                // Logger.Debug($"拆分为 {textParts.Length} 个文本部分");`
 
                 if (textParts.Length == 0)
                     return;
