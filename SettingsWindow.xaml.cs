@@ -88,6 +88,9 @@ namespace TaskbarLyrics
             SelectColorInComboBox(TranslationColorComboBox, config.TranslationFontColor);
 
             HideOnFullscreenCheckBox.IsChecked = config.HideOnFullscreen;
+
+            // 加载日志级别配置
+            SelectColorInComboBox(LogLevelComboBox, config.LogLevel?.ToLower() ?? "auto");
         }
 
         private void SelectColorInComboBox(ComboBox comboBox, string colorValue)
@@ -149,6 +152,11 @@ namespace TaskbarLyrics
             }
 
             config.HideOnFullscreen = HideOnFullscreenCheckBox.IsChecked ?? true;
+
+            if (LogLevelComboBox.SelectedItem is ComboBoxItem logLevelItem)
+            {
+                config.LogLevel = logLevelItem.Tag.ToString();
+            }
 
             ConfigManager.SaveConfig();
 
@@ -217,6 +225,12 @@ namespace TaskbarLyrics
         {
             // 这个选项在 ApplyConfig 中处理，这里不需要额外逻辑
             // 因为它不会影响预览效果，只影响运行时行为
+        }
+
+        private void LogLevelComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // 日志级别变化会立即应用，在 ApplyConfig 中保存到配置文件
+            ApplyConfig();
         }
 
         private void TranslationFontSizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

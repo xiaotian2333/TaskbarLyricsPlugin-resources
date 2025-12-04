@@ -18,6 +18,9 @@ namespace TaskbarLyrics
 
             ConfigManager.Initialize();
 
+            // 应用日志级别配置
+            ApplyLogLevelConfig();
+
             CreateTrayIcon();
 
             AppDomain.CurrentDomain.UnhandledException += (s, args) =>
@@ -302,6 +305,44 @@ namespace TaskbarLyrics
             {
                 Logger.Error($"关闭应用程序时出错: {ex.Message}");
                 Environment.Exit(0);
+            }
+        }
+
+        private void ApplyLogLevelConfig()
+        {
+            try
+            {
+                var config = ConfigManager.CurrentConfig;
+                string logLevelConfig = config?.LogLevel?.ToLower() ?? "auto";
+
+                LogLevel targetLogLevel;
+
+                switch (logLevelConfig)
+                {
+                    case "off":
+                        targetLogLevel = LogLevel.Off;
+                        break;
+                    case "error":
+                        targetLogLevel = LogLevel.Error;
+                        break;
+                    case "info":
+                        targetLogLevel = LogLevel.Info;
+                        break;
+                    case "debug":
+                        targetLogLevel = LogLevel.Debug;
+                        break;
+                    case "auto":
+                    default:
+                        // 使用自动检测的逻辑（已在Logger静态构造函数中处理）
+                        return;
+                }
+
+                Logger.SetLogLevel(targetLogLevel);
+            }
+            catch (Exception ex)
+            {
+                // 如果设置日志级别失败，继续使用默认级别
+                System.Diagnostics.Debug.WriteLine($"设置日志级别失败: {ex.Message}");
             }
         }
 

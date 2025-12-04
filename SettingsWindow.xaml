@@ -331,7 +331,23 @@
                                        FontSize="12"
                                        Foreground="#666666"
                                        TextWrapping="Wrap"
-                                       Margin="0,0,0,0"/>
+                                       Margin="0,0,0,15"/>
+
+                            <TextBlock Text="日志级别:" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="LogLevelComboBox" Margin="5,3"
+                                      Style="{StaticResource ModernComboBox}"
+                                      SelectionChanged="LogLevelComboBox_SelectionChanged">
+                                <ComboBoxItem Content="自动 (Auto)" Tag="auto"/>
+                                <ComboBoxItem Content="关闭 (Off)" Tag="off"/>
+                                <ComboBoxItem Content="仅错误 (Error)" Tag="error"/>
+                                <ComboBoxItem Content="信息 (Info)" Tag="info"/>
+                                <ComboBoxItem Content="调试 (Debug)" Tag="debug"/>
+                            </ComboBox>
+                            <TextBlock Text="控制日志输出的详细程度。Auto: 开发环境Debug，生产环境Off。"
+                                       FontSize="12"
+                                       Foreground="#666666"
+                                       TextWrapping="Wrap"
+                                       Margin="0,3,0,0"/>
                         </StackPanel>
                     </Border>
 

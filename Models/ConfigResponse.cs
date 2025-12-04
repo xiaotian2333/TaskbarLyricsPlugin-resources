@@ -42,5 +42,8 @@ namespace TaskbarLyrics.Models
 
         [JsonPropertyName("hide_on_fullscreen")]
         public bool HideOnFullscreen { get; set; } = true;
+
+        [JsonPropertyName("log_level")]
+        public string LogLevel { get; set; } = "Auto"; // Auto, Off, Error, Info, Debug
     }
 }
