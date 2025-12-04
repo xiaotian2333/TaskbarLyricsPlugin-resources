@@ -584,7 +584,7 @@ namespace TaskbarLyrics
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error parsing color: {ex.Message}");
+                Logger.Error($"解析字体颜色时出错: {ex.Message}");
             }
             
             return Brushes.White;
