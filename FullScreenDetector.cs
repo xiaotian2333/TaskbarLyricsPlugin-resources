@@ -32,15 +32,17 @@ namespace TaskbarLyrics
                 _checkTimer.Start();
                 // 立即检查一次
                 CheckFullScreenStatus(null, null);
-                Logger.Info("全屏检测已启动");
             }
         }
 
+        /// <summary>
+        /// 停止全屏检测功能
+        /// </summary>
         public static void Stop()
         {
-            _checkTimer.Stop();
-            _isFullScreenActive = false;
-            Logger.Info("全屏检测已停止");
+            _checkTimer.Stop(); // 停止计时器
+            _isFullScreenActive = false; // 重置全屏状态标志
+            Logger.Info("全屏检测已停止"); // 记录停止信息到日志
         }
 
         private static void CheckFullScreenStatus(object sender, EventArgs e)
