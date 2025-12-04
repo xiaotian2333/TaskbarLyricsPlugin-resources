@@ -7,6 +7,7 @@ namespace TaskbarLyrics
         public PositionPreviewWindow()
         {
             InitializeComponent();
+            this.Topmost = true;
         }
 
         public void SetPreviewRect(double x, double y, double width, double height)
@@ -20,7 +21,8 @@ namespace TaskbarLyrics
         public void ShowPreview()
         {
             this.Show();
-            this.Activate();
+            this.Topmost = true;
+            // 不调用 Activate()，避免抢夺焦点
         }
 
         public void HidePreview()

@@ -59,7 +59,7 @@ namespace TaskbarLyrics
             }
 
             SelectColorInComboBox(FontColorComboBox, config.FontColor);
-            
+
             SelectColorInComboBox(HighlightColorComboBox, config.HighlightColor);
 
             // 如果没有找到匹配的颜色（可能是因为配置值不在列表中），选择"无"
@@ -67,7 +67,7 @@ namespace TaskbarLyrics
             {
                 HighlightColorComboBox.SelectedIndex = 0; // 选择第一个选项"无"
             }
-            
+
             foreach (ComboBoxItem item in AlignmentComboBox.Items)
             {
                 if (item.Tag.ToString() == config.Alignment.ToLower())
@@ -78,9 +78,9 @@ namespace TaskbarLyrics
             }
 
             SelectColorInComboBox(BackgroundColorComboBox, config.BackgroundColor);
-            
+
             ShowTranslationCheckBox.IsChecked = config.ShowTranslation;
-            
+
             foreach (ComboBoxItem item in TranslationFontSizeComboBox.Items)
             {
                 if (item.Content.ToString() == config.TranslationFontSize.ToString())
@@ -105,6 +105,9 @@ namespace TaskbarLyrics
 
             // 加载日志级别配置
             SelectColorInComboBox(LogLevelComboBox, config.LogLevel?.ToLower() ?? "auto");
+
+            // 如果预览窗口已经打开，立即更新其位置
+            UpdatePreviewWindow();
         }
 
         private void SelectColorInComboBox(ComboBox comboBox, string colorValue)
@@ -376,6 +379,7 @@ namespace TaskbarLyrics
             }
             else
             {
+                // 先更新预览窗口位置
                 UpdatePreviewWindow();
                 _previewWindow.ShowPreview();
             }
@@ -388,7 +392,7 @@ namespace TaskbarLyrics
 
         private void UpdatePreviewWindow()
         {
-            if (_previewWindow != null && _previewWindow.IsVisible)
+            if (_previewWindow != null)
             {
                 // 获取任务栏位置
                 var taskbarRect = TaskbarMonitor.GetTaskbarRect();
