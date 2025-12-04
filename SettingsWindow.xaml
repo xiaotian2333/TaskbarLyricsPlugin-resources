@@ -207,9 +207,6 @@
                                         <ComboBoxItem Content="青色" Tag="#00FFFF"/>
                                         <ComboBoxItem Content="粉色" Tag="#FF00FF"/>
                                     </ComboBox>
-                                    <Button Content="自定义" Margin="10,0,0,0" 
-                                            Style="{StaticResource SecondaryButton}"
-                                            Click="CustomFontColor_Click"/>
                                 </StackPanel>
                             </Grid>
                         </StackPanel>
@@ -243,9 +240,6 @@
                                         <ComboBoxItem Content="橙色" Tag="#FFFFA500"/>
                                         <ComboBoxItem Content="金色" Tag="#FFFFD700"/>
                                     </ComboBox>
-                                    <Button Content="自定义" Margin="10,0,0,0"
-                                            Style="{StaticResource SecondaryButton}"
-                                            Click="CustomHighlightColor_Click"/>
                                 </StackPanel>
 
                                 <TextBlock Grid.Row="1" Grid.Column="0" Text="背景颜色:" Style="{StaticResource SettingLabel}"/>
@@ -258,9 +252,6 @@
                                         <ComboBoxItem Content="黑色" Tag="#FF000000"/>
                                         <ComboBoxItem Content="深灰" Tag="#FF202020"/>
                                     </ComboBox>
-                                    <Button Content="自定义" Margin="10,0,0,0"
-                                            Style="{StaticResource SecondaryButton}"
-                                            Click="CustomBackgroundColor_Click"/>
                                 </StackPanel>
 
                                 <TextBlock Grid.Row="2" Grid.Column="0" Text="对齐方式:" Style="{StaticResource SettingLabel}"/>
@@ -318,9 +309,6 @@
                                         <ComboBoxItem Content="黄色" Tag="#FFFF00"/>
                                         <ComboBoxItem Content="青色" Tag="#00FFFF"/>
                                     </ComboBox>
-                                    <Button Content="自定义" Margin="10,0,0,0" 
-                                            Style="{StaticResource SecondaryButton}"
-                                            Click="CustomTranslationColor_Click"/>
                                 </StackPanel>
                             </Grid>
                         </StackPanel>
@@ -379,27 +367,6 @@
                     </Border>
                 </StackPanel>
             </ScrollViewer>
-            
-            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,15,0,0">
-                <Button x:Name="ApplyButton"
-                        Content="应用"
-                        Style="{StaticResource SecondaryButton}"
-                        Click="ApplyButton_Click"
-                        Width="80"
-                        Margin="0,0,10,0"/>
-                <Button x:Name="OkButton"
-                        Content="确定"
-                        Style="{StaticResource ModernButton}"
-                        Click="OkButton_Click"
-                        Width="80"
-                        Margin="10,0,10,0"/>
-                <Button x:Name="CancelButton"
-                        Content="取消"
-                        Style="{StaticResource SecondaryButton}"
-                        Click="CancelButton_Click"
-                        Width="80"
-                        Margin="10,0,0,0"/>
-            </StackPanel>
         </Grid>
     </Border>
 
