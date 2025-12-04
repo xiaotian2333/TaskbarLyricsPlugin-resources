@@ -27,8 +27,12 @@ namespace TaskbarLyrics
         private bool _isMouseOver = false;
         private DispatcherTimer _mouseLeaveTimer;
         private DispatcherTimer _smoothUpdateTimer;
+        private DispatcherTimer _scrollTimer;
         private bool _isClosing = false;
         private string _lastSongTitle = ""; // 用于检测歌曲变化
+        private double _scrollOffset = 0;
+        private int _scrollDirection = 1; // 1 for right, -1 for left
+        private bool _isScrolling = false;
 
         public MainWindow()
         {
@@ -56,6 +60,7 @@ namespace TaskbarLyrics
             _restoreTimer?.Stop();
             _nowPlayingTimer?.Stop();
             _smoothUpdateTimer?.Stop();
+            _scrollTimer?.Stop();
             _mouseLeaveTimer?.Stop();
 
             FullScreenDetector.Stop();
@@ -123,6 +128,13 @@ namespace TaskbarLyrics
             };
             _smoothUpdateTimer.Tick += (s, e) => SmoothUpdateLyrics();
             _smoothUpdateTimer.Start();
+
+            _scrollTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(30)
+            };
+            _scrollTimer.Tick += (s, e) => UpdateScroll();
+            _scrollTimer.Start();
 
             _mouseLeaveTimer = new DispatcherTimer
             {
@@ -292,6 +304,10 @@ namespace TaskbarLyrics
                 }
             }
 
+            // 应用歌词宽度限制
+            LyricsContainer.MaxWidth = config.LyricsWidth;
+            LyricsScrollViewer.MaxWidth = config.LyricsWidth;
+
             ApplyAlignment();
         }
 
@@ -324,7 +340,7 @@ namespace TaskbarLyrics
             
             LyricsContainer.Margin = margin;
             ControlPanelBorder.Margin = margin;
-            
+
             // 移除频繁的对齐方式日志输出
         }
 
@@ -396,6 +412,11 @@ namespace TaskbarLyrics
                     if (LyricsContent.Content != lyricsVisual)
                     {
                         LyricsContent.Content = lyricsVisual;
+
+                        // 重置滚动状态
+                        _scrollOffset = 0;
+                        _scrollDirection = 1;
+                        _isScrolling = false;
                     }
                 }
                 // 没有匹配的歌词行时，不清空显示，保持当前歌词
@@ -422,6 +443,57 @@ namespace TaskbarLyrics
         {
             var config = ConfigManager.CurrentConfig;
             TaskbarMonitor.PositionWindowOnTaskbar(this, config.PositionOffsetX, config.PositionOffsetY);
+        }
+
+        private void UpdateScroll()
+        {
+            if (!ConfigManager.CurrentConfig.EnableLyricsScroll || _isClosing)
+                return;
+
+            // 检查歌词是否需要滚动
+            if (LyricsContent.ActualWidth > ConfigManager.CurrentConfig.LyricsWidth)
+            {
+                _isScrolling = true;
+
+                // 计算滚动速度
+                double scrollSpeed = 1.0;
+
+                // 更新滚动偏移
+                _scrollOffset += scrollSpeed * _scrollDirection;
+
+                // 检查是否需要改变滚动方向
+                if (_scrollOffset >= LyricsContent.ActualWidth - ConfigManager.CurrentConfig.LyricsWidth)
+                {
+                    _scrollOffset = LyricsContent.ActualWidth - ConfigManager.CurrentConfig.LyricsWidth;
+                    _scrollDirection = -1;
+                }
+                else if (_scrollOffset <= 0)
+                {
+                    _scrollOffset = 0;
+                    _scrollDirection = 1;
+                }
+
+                // 应用滚动偏移
+                if (LyricsContent.Content is FrameworkElement element)
+                {
+                    element.Margin = new Thickness(-_scrollOffset, 0, 0, 0);
+                }
+            }
+            else
+            {
+                // 如果不需要滚动，重置滚动状态
+                if (_isScrolling)
+                {
+                    _isScrolling = false;
+                    _scrollOffset = 0;
+                    _scrollDirection = 1;
+
+                    if (LyricsContent.Content is FrameworkElement element)
+                    {
+                        element.Margin = new Thickness(0);
+                    }
+                }
+            }
         }
 
         protected override void OnSourceInitialized(EventArgs e)

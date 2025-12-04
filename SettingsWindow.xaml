@@ -378,15 +378,6 @@
                                         <StackPanel Grid.Row="1"
                                                     Orientation="Horizontal"
                                                     HorizontalAlignment="Center">
-                                            <Button x:Name="PreviewPositionButton"
-                                                    Content="👁 预览"
-                                                    FontSize="12"
-                                                    FontWeight="SemiBold"
-                                                    Style="{StaticResource ModernButton}"
-                                                    Width="70"
-                                                    Height="35"
-                                                    Margin="0,0,5,0"
-                                                    Click="PreviewPosition_Click"/>
                                             <Button x:Name="ResetPositionButton"
                                                     Content="重置"
                                                     FontSize="12"
@@ -524,6 +515,34 @@
                                        Foreground="#666666"
                                        TextWrapping="Wrap"
                                        Margin="0,0,0,15"/>
+
+                            <TextBlock Text="歌词宽度设置:" Style="{StaticResource SettingLabel}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <TextBlock Text="宽度 (像素):"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,10,0"/>
+                                <TextBox x:Name="LyricsWidthTextBox"
+                                         Width="80"
+                                         Height="25"
+                                         Text="800"
+                                         FontSize="13"
+                                         VerticalContentAlignment="Center"/>
+                                <TextBlock Text="启用自动滚动"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"
+                                           Margin="30,0,10,0"/>
+                                <CheckBox x:Name="EnableLyricsScrollCheckBox"
+                                          Content=""
+                                          IsChecked="True"
+                                          VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="当歌词超过设置宽度时，自动滚动显示。宽度为0表示不限制。"
+                                       FontSize="12"
+                                       Foreground="#666666"
+                                       TextWrapping="Wrap"/>
 
                             <CheckBox x:Name="EnableLyricsFilterCheckBox"
                                       Content="启用歌词过滤"

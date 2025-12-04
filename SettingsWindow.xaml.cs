@@ -12,9 +12,11 @@ namespace TaskbarLyrics
 {
     public partial class SettingsWindow : Window
     {
-        private PositionPreviewWindow _previewWindow;
+        private static SettingsWindow _instance;
         private int _currentOffsetX = 0;
         private int _currentOffsetY = 0;
+
+        public static SettingsWindow Instance => _instance;
 
         public SettingsWindow()
         {
@@ -23,6 +25,8 @@ namespace TaskbarLyrics
 
             this.MouseDown += SettingsWindow_MouseDown;
             this.Closing += SettingsWindow_Closing;
+
+            _instance = this;
         }
 
         private void SettingsWindow_MouseDown(object sender, MouseButtonEventArgs e)
@@ -103,11 +107,12 @@ namespace TaskbarLyrics
             _currentOffsetY = config.PositionOffsetY;
             UpdateOffsetDisplay();
 
+            // 加载歌词宽度配置
+            LyricsWidthTextBox.Text = config.LyricsWidth.ToString();
+            EnableLyricsScrollCheckBox.IsChecked = config.EnableLyricsScroll;
+
             // 加载日志级别配置
             SelectColorInComboBox(LogLevelComboBox, config.LogLevel?.ToLower() ?? "auto");
-
-            // 如果预览窗口已经打开，立即更新其位置
-            UpdatePreviewWindow();
         }
 
         private void SelectColorInComboBox(ComboBox comboBox, string colorValue)
@@ -177,6 +182,13 @@ namespace TaskbarLyrics
             // 保存位置偏移配置
             config.PositionOffsetX = _currentOffsetX;
             config.PositionOffsetY = _currentOffsetY;
+
+            // 保存歌词宽度配置
+            if (int.TryParse(LyricsWidthTextBox.Text, out int width))
+            {
+                config.LyricsWidth = Math.Max(0, width); // 确保宽度不为负
+            }
+            config.EnableLyricsScroll = EnableLyricsScrollCheckBox.IsChecked ?? true;
 
             if (LogLevelComboBox.SelectedItem is ComboBoxItem logLevelItem)
             {
@@ -352,7 +364,6 @@ namespace TaskbarLyrics
 
                     UpdateOffsetDisplay();
                     ApplyConfig();
-                    UpdatePreviewWindow();
                 }
             }
         }
@@ -363,26 +374,6 @@ namespace TaskbarLyrics
             _currentOffsetY = 0;
             UpdateOffsetDisplay();
             ApplyConfig();
-            UpdatePreviewWindow();
-        }
-
-        private void PreviewPosition_Click(object sender, RoutedEventArgs e)
-        {
-            if (_previewWindow == null)
-            {
-                _previewWindow = new PositionPreviewWindow();
-            }
-
-            if (_previewWindow.IsVisible)
-            {
-                _previewWindow.HidePreview();
-            }
-            else
-            {
-                // 先更新预览窗口位置
-                UpdatePreviewWindow();
-                _previewWindow.ShowPreview();
-            }
         }
 
         private void UpdateOffsetDisplay()
@@ -390,29 +381,9 @@ namespace TaskbarLyrics
             OffsetDisplayText.Text = $"X: {_currentOffsetX}, Y: {_currentOffsetY}";
         }
 
-        private void UpdatePreviewWindow()
-        {
-            if (_previewWindow != null)
-            {
-                // 获取任务栏位置
-                var taskbarRect = TaskbarMonitor.GetTaskbarRect();
-
-                // 设置预览窗口位置
-                _previewWindow.SetPreviewRect(
-                    taskbarRect.Left + _currentOffsetX,
-                    taskbarRect.Top + _currentOffsetY,
-                    taskbarRect.Width,
-                    taskbarRect.Height);
-            }
-        }
-
         private void SettingsWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (_previewWindow != null)
-            {
-                _previewWindow.Close();
-                _previewWindow = null;
-            }
+            _instance = null;
         }
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
