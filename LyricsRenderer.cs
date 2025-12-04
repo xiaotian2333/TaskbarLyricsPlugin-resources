@@ -107,8 +107,17 @@ namespace TaskbarLyrics
 
             if (lines.Count > 0)
             {
+                // 检查第一行是否为空（移除时间戳后）
+                string cleanText = TimeStampRegex.Replace(lines[0], "").Trim();
+
+                // 如果是空行，跳过该歌词行
+                if (string.IsNullOrEmpty(cleanText))
+                {
+                    return null;
+                }
+
                 ParseLyricsText(lines[0], lyricsLine);
-                
+
                 if (lines.Count > 1)
                 {
                     lyricsLine.TranslationText = lines[1];
@@ -125,10 +134,11 @@ namespace TaskbarLyrics
                 var wordTimings = new List<WordTiming>();
                 
                 string cleanText = TimeStampRegex.Replace(lyricLine, "").Trim();
-                
+
+                // 注意：空行检查已在 ParseLyricsLineGroup 中处理
+                // 这里不应该再有空行，但保留检查作为保险
                 if (string.IsNullOrEmpty(cleanText))
                 {
-                    // Logger.Error("移除时间戳后没有文本内容");
                     return;
                 }
 

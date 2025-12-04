@@ -28,6 +28,7 @@ namespace TaskbarLyrics
         private DispatcherTimer _mouseLeaveTimer;
         private DispatcherTimer _smoothUpdateTimer;
         private bool _isClosing = false;
+        private string _lastSongTitle = ""; // 用于检测歌曲变化
 
         public MainWindow()
         {
@@ -146,9 +147,22 @@ namespace TaskbarLyrics
                 {
                     _currentPosition = nowPlaying.Position;
                     _isPlaying = nowPlaying.IsPlaying;
-                    
+
+                    // 检测歌曲变化
+                    string currentSongTitle = $"{nowPlaying.Artist} - {nowPlaying.Title}";
+                    if (!string.IsNullOrEmpty(currentSongTitle) && currentSongTitle != _lastSongTitle)
+                    {
+                        Logger.Info($"检测到歌曲变化: {_lastSongTitle} -> {currentSongTitle}");
+                        _lastSongTitle = currentSongTitle;
+
+                        // 歌曲变化时清空歌词，强制重新加载
+                        ClearLyrics();
+                        _lastLyricsText = "";
+                        _lyricsLines.Clear();
+                        _forceRefresh = true; // 强制刷新歌词
+                    }
+
                     PlayPauseButton.Content = _isPlaying ? "⏸" : "▶";
-                    _forceRefresh = true;
                 }
             }
             catch (Exception ex)
@@ -325,25 +339,22 @@ namespace TaskbarLyrics
                 var lyricsResponse = await _apiService.GetLyricsAsync();
                 if (lyricsResponse?.Status != "success" || string.IsNullOrEmpty(lyricsResponse.Lyric))
                 {
-                    if (_lyricsLines.Count > 0 || _forceRefresh)
-                    {
-                        ClearLyrics();
-                        _lastLyricsText = "";
-                        _forceRefresh = false;
-                    }
+                    // 没有歌词时不清空显示，保持当前歌词
+                    _forceRefresh = false;
                     return;
                 }
 
                 string currentLyrics = lyricsResponse.Lyric.Trim();
-                
+
                 if (currentLyrics == _lastLyricsText && !_forceRefresh)
                 {
-                    return;
+                    return; // 歌词没有变化，跳过解析
                 }
 
                 _lastLyricsText = currentLyrics;
                 _forceRefresh = false;
 
+                // 只在歌词真正变化时才执行ParseLyrics
                 _lyricsLines = LyricsRenderer.ParseLyrics(currentLyrics);
 
                 // 只在歌词行数变化时记录日志
@@ -362,27 +373,28 @@ namespace TaskbarLyrics
 
         private void UpdateCurrentLyricsLine()
         {
-            if (_lyricsLines == null || _lyricsLines.Count == 0 || _isClosing)
+            if (_isClosing)
             {
-                ClearLyrics();
                 return;
             }
 
-            var currentLine = LyricsRenderer.GetCurrentLyricsLine(_lyricsLines, _currentPosition);
-            if (currentLine != null)
+            // 如果有歌词数据，尝试更新显示
+            if (_lyricsLines != null && _lyricsLines.Count > 0)
             {
-                var config = ConfigManager.CurrentConfig;
-                var lyricsVisual = LyricsRenderer.CreateDualLineLyricsVisual(currentLine, config, ActualWidth, _currentPosition);
-
-                if (LyricsContent.Content != lyricsVisual)
+                var currentLine = LyricsRenderer.GetCurrentLyricsLine(_lyricsLines, _currentPosition);
+                if (currentLine != null)
                 {
-                    LyricsContent.Content = lyricsVisual;
+                    var config = ConfigManager.CurrentConfig;
+                    var lyricsVisual = LyricsRenderer.CreateDualLineLyricsVisual(currentLine, config, ActualWidth, _currentPosition);
+
+                    if (LyricsContent.Content != lyricsVisual)
+                    {
+                        LyricsContent.Content = lyricsVisual;
+                    }
                 }
+                // 没有匹配的歌词行时，不清空显示，保持当前歌词
             }
-            else
-            {
-                ClearLyrics();
-            }
+            // 没有歌词数据时，也保持当前显示，不清空
         }
 
         private void ClearLyrics()
