@@ -22,7 +22,8 @@ namespace TaskbarLyrics
 
             AppDomain.CurrentDomain.UnhandledException += (s, args) =>
             {
-                MessageBox.Show($"Error: {args.ExceptionObject}", "错误", 
+                Logger.Error($"未处理的异常: {args.ExceptionObject}");
+                MessageBox.Show($"Error: {args.ExceptionObject}", "错误",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             };
         }
@@ -299,6 +300,7 @@ namespace TaskbarLyrics
             }
             catch (Exception ex)
             {
+                Logger.Error($"关闭应用程序时出错: {ex.Message}");
                 Environment.Exit(0);
             }
         }

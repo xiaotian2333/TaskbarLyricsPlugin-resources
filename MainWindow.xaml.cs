@@ -31,7 +31,7 @@ namespace TaskbarLyrics
         public MainWindow()
         {
             InitializeComponent();
-            
+
             _apiService = new LyricsApiService();
 
             this.IsVisibleChanged += MainWindow_IsVisibleChanged;
@@ -39,7 +39,8 @@ namespace TaskbarLyrics
 
             InitializeWindow();
             SetupTimers();
-            
+            SetupFullScreenDetection();
+
             this.Focusable = true;
             this.IsHitTestVisible = true;
         }
@@ -47,19 +48,28 @@ namespace TaskbarLyrics
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             _isClosing = true;
-            
+
             _updateTimer?.Stop();
             _positionTimer?.Stop();
             _restoreTimer?.Stop();
             _nowPlayingTimer?.Stop();
             _smoothUpdateTimer?.Stop();
             _mouseLeaveTimer?.Stop();
+
+            FullScreenDetector.Stop();
         }
 
         private void MainWindow_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             if (_isClosing)
                 return;
+
+            // 如果全屏检测正在运行且已检测到全屏，不要自动恢复可见性
+            if (FullScreenDetector.IsFullScreenActive && ConfigManager.CurrentConfig.HideOnFullscreen)
+            {
+                Logger.Info("全屏模式激活，跳过自动可见性恢复");
+                return;
+            }
 
             if (!this.IsVisible)
             {
@@ -69,7 +79,7 @@ namespace TaskbarLyrics
                     {
                         this.Visibility = Visibility.Visible;
                         TaskbarMonitor.ForceShowWindow(this);
-                        Debug.WriteLine("Window visibility restored");
+                        Logger.Info("自动恢复窗口可见性");
                     }
                 }), DispatcherPriority.Background);
             }
@@ -158,15 +168,21 @@ namespace TaskbarLyrics
         {
             if (_isClosing) return;
 
+            // 如果全屏模式激活，不要强制显示窗口
+            if (FullScreenDetector.IsFullScreenActive && ConfigManager.CurrentConfig.HideOnFullscreen)
+            {
+                return;
+            }
+
             try
             {
                 TaskbarMonitor.SetWindowToTaskbarLevel(this);
-                
+
                 if (this.Visibility != Visibility.Visible && !_isClosing)
                 {
                     this.Visibility = Visibility.Visible;
                 }
-                
+
                 if (this.WindowState != WindowState.Normal && !_isClosing)
                 {
                     this.WindowState = WindowState.Normal;
@@ -174,7 +190,7 @@ namespace TaskbarLyrics
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error: {ex.Message}");
+                Logger.Error($"设置窗口置顶时出错: {ex.Message}");
             }
         }
 
@@ -203,6 +219,28 @@ namespace TaskbarLyrics
         {
             ApplyConfig();
             _forceRefresh = true;
+
+            // 根据配置重新设置全屏检测
+            if (ConfigManager.CurrentConfig.HideOnFullscreen)
+            {
+                if (!FullScreenDetector.IsFullScreenActive)
+                {
+                    FullScreenDetector.Start();
+                    Debug.WriteLine("配置更新：全屏检测已启动");
+                }
+            }
+            else
+            {
+                FullScreenDetector.Stop();
+                Debug.WriteLine("配置更新：全屏检测已停止");
+
+                // 如果之前因为全屏而隐藏了窗口，现在要显示出来
+                if (this.Visibility == Visibility.Collapsed)
+                {
+                    this.Visibility = Visibility.Visible;
+                    TaskbarMonitor.ForceShowWindow(this);
+                }
+            }
         }
 
         public void ForceRefreshLyrics()
@@ -485,6 +523,87 @@ namespace TaskbarLyrics
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error in Previous Track: {ex.Message}");
+            }
+        }
+
+        private void SetupFullScreenDetection()
+        {
+            FullScreenDetector.FullScreenStatusChanged += OnFullScreenStatusChanged;
+
+            // 总是先启动检测，OnFullScreenStatusChanged 会根据配置决定是否响应
+            FullScreenDetector.Start();
+            Logger.Info($"全屏检测已启动，配置 HideOnFullscreen: {ConfigManager.CurrentConfig.HideOnFullscreen}");
+        }
+
+        private void OnFullScreenStatusChanged(object sender, bool isFullScreen)
+        {
+            if (_isClosing) return;
+
+            Logger.Info($"全屏状态变化: {isFullScreen}, HideOnFullscreen配置: {ConfigManager.CurrentConfig.HideOnFullscreen}, 当前窗口可见性: {this.Visibility}");
+
+            // 只在配置启用时响应全屏状态变化
+            if (!ConfigManager.CurrentConfig.HideOnFullscreen)
+            {
+                Logger.Info("全屏隐藏功能已禁用，忽略状态变化");
+                return;
+            }
+
+            try
+            {
+                if (isFullScreen)
+                {
+                    // 检测到全屏应用，隐藏歌词
+                    if (this.Visibility == Visibility.Visible)
+                    {
+                        Logger.Info($"全屏应用检测到，隐藏歌词 - {FullScreenDetector.GetActiveWindowTitle()}");
+
+                        // 使用多种方法确保窗口隐藏
+                        this.Visibility = Visibility.Hidden;
+                        this.Hide();
+
+                        // 额外的Win32 API调用确保隐藏
+                        try
+                        {
+                            var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                            TaskbarMonitor.ShowWindow(hwnd, 0); // SW_HIDE = 0
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error($"使用Win32 API隐藏窗口失败: {ex.Message}");
+                        }
+
+                        Logger.Info($"窗口状态 - Visibility: {this.Visibility}, IsVisible: {this.IsVisible}");
+                    }
+                    else
+                    {
+                        Logger.Info($"窗口已经隐藏，当前状态 - Visibility: {this.Visibility}, IsVisible: {this.IsVisible}");
+                    }
+                }
+                else
+                {
+                    // 退出全屏，恢复显示
+                    if (this.Visibility != Visibility.Visible || !this.IsVisible)
+                    {
+                        Logger.Info("退出全屏，恢复歌词显示");
+
+                        // 使用多种方法确保窗口显示
+                        this.Visibility = Visibility.Visible;
+                        this.Show();
+
+                        // 强制显示并重新设置窗口属性
+                        TaskbarMonitor.ForceShowWindow(this);
+
+                        Logger.Info($"窗口恢复后状态 - Visibility: {this.Visibility}, IsVisible: {this.IsVisible}");
+                    }
+                    else
+                    {
+                        Logger.Info($"窗口已经可见，当前状态 - Visibility: {this.Visibility}, IsVisible: {this.IsVisible}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"处理全屏状态变化时出错: {ex.Message}");
             }
         }
     }

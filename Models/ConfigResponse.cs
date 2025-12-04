@@ -39,5 +39,8 @@ namespace TaskbarLyrics.Models
         
         [JsonPropertyName("highlight_animation")]
         public bool HighlightAnimation { get; set; } = true;
+
+        [JsonPropertyName("hide_on_fullscreen")]
+        public bool HideOnFullscreen { get; set; } = true;
     }
 }

@@ -277,14 +277,14 @@
                     <Border Background="#F8F9FA" CornerRadius="8" Padding="15" Margin="0,0,0,15">
                         <StackPanel>
                             <TextBlock Text="🌐 翻译设置" Style="{StaticResource SectionHeader}"/>
-                            
+
                             <CheckBox x:Name="ShowTranslationCheckBox"
                                       Content="显示翻译歌词"
                                       FontSize="14"
                                       FontWeight="SemiBold"
                                       Foreground="#333333"
                                       Margin="0,0,0,15"
-                                      Checked="ShowTranslationCheckBox_Changed" 
+                                      Checked="ShowTranslationCheckBox_Changed"
                                       Unchecked="ShowTranslationCheckBox_Changed"/>
                             
                             <Grid>
@@ -322,6 +322,27 @@
                                             Click="CustomTranslationColor_Click"/>
                                 </StackPanel>
                             </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#F8F9FA" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+                        <StackPanel>
+                            <TextBlock Text="⚙️ 行为设置" Style="{StaticResource SectionHeader}"/>
+
+                            <CheckBox x:Name="HideOnFullscreenCheckBox"
+                                      Content="检测到全屏应用时隐藏歌词"
+                                      FontSize="14"
+                                      FontWeight="SemiBold"
+                                      Foreground="#333333"
+                                      Margin="0,0,0,10"
+                                      Checked="HideOnFullscreenCheckBox_Changed"
+                                      Unchecked="HideOnFullscreenCheckBox_Changed"/>
+
+                            <TextBlock Text="当检测到全屏应用（如视频播放器、游戏等）时，自动隐藏歌词以免干扰。退出全屏后会自动恢复显示。"
+                                       FontSize="12"
+                                       Foreground="#666666"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,0"/>
                         </StackPanel>
                     </Border>
 

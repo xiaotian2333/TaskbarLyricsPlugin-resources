@@ -80,6 +80,8 @@ namespace TaskbarLyrics
             }
 
             SelectColorInComboBox(TranslationColorComboBox, config.TranslationFontColor);
+
+            HideOnFullscreenCheckBox.IsChecked = config.HideOnFullscreen;
         }
 
         private void SelectColorInComboBox(ComboBox comboBox, string colorValue)
@@ -140,6 +142,8 @@ namespace TaskbarLyrics
                 config.TranslationFontColor = translationColorItem.Tag.ToString();
             }
 
+            config.HideOnFullscreen = HideOnFullscreenCheckBox.IsChecked ?? true;
+
             ConfigManager.SaveConfig();
 
             var mainWindow = Application.Current.MainWindow as MainWindow;
@@ -199,8 +203,14 @@ namespace TaskbarLyrics
 
         private void ShowTranslationCheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            PreviewTranslation.Visibility = ShowTranslationCheckBox.IsChecked == true ? 
+            PreviewTranslation.Visibility = ShowTranslationCheckBox.IsChecked == true ?
                 Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void HideOnFullscreenCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            // 这个选项在 ApplyConfig 中处理，这里不需要额外逻辑
+            // 因为它不会影响预览效果，只影响运行时行为
         }
 
         private void TranslationFontSizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

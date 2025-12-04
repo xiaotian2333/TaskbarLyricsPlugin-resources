@@ -141,7 +141,6 @@ namespace TaskbarLyrics
                 if (textParts.Length == 0)
                     return;
 
-                int totalDuration = 4000;
                 int baseCharDuration = 150;
                 int wordSpacing = 20;
                 
