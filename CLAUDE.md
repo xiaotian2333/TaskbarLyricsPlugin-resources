@@ -10,7 +10,7 @@ TaskbarLyricsPlugin-resources 是一个基于 C#/.NET 8 和 WPF 的 Windows 任�
 
 - **.NET 8** (target framework: net8.0-windows)
 - **WPF** (Windows Presentation Foundation) - 用户界面框架
-- **Windows Forms** - 用于系统托盘图标和上下文菜单
+- **Windows Forms** - 用于系统托盘图标和全屏检测定时器
 - **Newtonsoft.Json** - JSON 序列化和反序列化
 - **Win32 API** - 通过 P/Invoke 调用原生 Windows API 进行窗口管理
 
@@ -25,6 +25,9 @@ dotnet run
 
 # 发布为可执行文件
 dotnet publish -c Release -r win-x64 --self-contained
+
+# 监控调试日志（需要先启动应用程序）
+./watchlog.bat
 ```
 
 ## 架构和核心组件
@@ -70,7 +73,18 @@ dotnet publish -c Release -r win-x64 --self-contained
    - 用户偏好设置持久化
    - 配置位置：%AppData%/TaskbarLyrics/config.json
 
-7. **Models/** - 数据模型
+7. **Logger.cs** - 日志系统
+   - 支持多级别日志（Error, Info, Debug）
+   - 自动过滤重复日志消息（5秒内）
+   - 日志文件位置：%AppData%/TaskbarLyrics/debug.log
+   - 可通过 watchlog.bat 实时监控日志
+
+8. **FullScreenDetector.cs** - 全屏检测
+   - 检测应用程序是否处于全屏模式
+   - 全屏时自动隐藏歌词显示
+   - 使用 Windows Forms 定时器定期检查
+
+9. **Models/** - 数据模型
    - `LyricsResponse.cs` - API 响应模型
    - `NowPlayingResponse.cs` - 播放状态模型
    - `ConfigResponse.cs` - 配置响应模型
@@ -81,8 +95,10 @@ dotnet publish -c Release -r win-x64 --self-contained
 1. **逐字同步动画**：使用精确的时间戳实现词语级别的同步高亮
 2. **多语言支持**：特别优化了 CJK 字符的渲染和动画
 3. **任务栏集成**：通过 Win32 API 实现真正的任务栏嵌入
-4. **实时控制**：可以通过 API 控制音乐播放
-5. **高度可定制**：字体、颜色、对齐方式、翻译等均可自定义
+4. **全屏自适应**：检测全屏应用并自动隐藏歌词
+5. **实时控制**：可以通过 API 控制音乐播放
+6. **高度可定制**：字体、颜色、对齐方式、翻译等均可自定义
+7. **智能日志**：支持多级别日志和重复消息过滤
 
 ### 开发注意事项
 
@@ -91,6 +107,8 @@ dotnet publish -c Release -r win-x64 --self-contained
 3. **API 依赖**：依赖于本地运行的歌词 API 服务器（localhost:35374）
 4. **DPI 缩放**：需要考虑不同 DPI 设置下的显示效果
 5. **内存管理**：歌词渲染缓存需要定期清理以避免内存泄漏
+6. **日志级别**：生产环境默认关闭日志，开发时可通过配置启用
+7. **全屏检测**：使用 Windows Forms 定时器，每秒检查一次全屏状态
 
 ### 窗口 XAML 文件
 - `MainWindow.xaml` - 主歌词显示窗口
