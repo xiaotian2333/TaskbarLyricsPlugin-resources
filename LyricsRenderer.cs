@@ -33,14 +33,19 @@ namespace TaskbarLyrics
 
         public static List<LyricsLine> ParseLyrics(string lyricsText)
         {
+            return ParseLyrics(lyricsText, null);
+        }
+
+        public static List<LyricsLine> ParseLyrics(string lyricsText, string songTitle)
+        {
             var lines = new List<LyricsLine>();
-            
+
             if (string.IsNullOrEmpty(lyricsText))
                 return lines;
 
             var lyricLines = lyricsText.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
             var timeStampGroups = GroupLinesByTimeStamp(lyricLines);
-            
+
             foreach (var group in timeStampGroups)
             {
                 var lyricsLine = ParseLyricsLineGroup(group.Key, group.Value);
@@ -51,7 +56,7 @@ namespace TaskbarLyrics
             }
 
             lines.Sort((a, b) => a.StartTime.CompareTo(b.StartTime));
-            
+
             for (int i = 0; i < lines.Count; i++)
             {
                 if (i < lines.Count - 1)
@@ -63,7 +68,33 @@ namespace TaskbarLyrics
                     lines[i].EndTime = lines[i].StartTime + 5000;
                 }
             }
-            
+
+            // 如果有歌曲标题，将其作为歌词列表的第一项插入
+            if (!string.IsNullOrEmpty(songTitle))
+            {
+                var titleLine = new LyricsLine
+                {
+                    OriginalText = songTitle,
+                    StartTime = 0,
+                    EndTime = lines.Count > 0 ? lines[0].StartTime : 3000,
+                    IsWordTiming = false
+                };
+
+                lines.Insert(0, titleLine);
+
+                // 更新所有后续歌词行的结束时间
+                for (int i = 1; i < lines.Count - 1; i++)
+                {
+                    lines[i].EndTime = lines[i + 1].StartTime;
+                }
+
+                // 更新最后一行的结束时间
+                if (lines.Count > 1)
+                {
+                    lines[lines.Count - 1].EndTime = lines[lines.Count - 1].StartTime + 5000;
+                }
+            }
+
             return lines;
         }
 

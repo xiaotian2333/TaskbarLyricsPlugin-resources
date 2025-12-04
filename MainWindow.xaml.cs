@@ -357,8 +357,8 @@ namespace TaskbarLyrics
                 _lastLyricsText = currentLyrics;
                 _forceRefresh = false;
 
-                // 只在歌词真正变化时才执行ParseLyrics
-                _lyricsLines = LyricsRenderer.ParseLyrics(currentLyrics);
+                // 只在歌词真正变化时才执行ParseLyrics，并传递歌曲标题
+                _lyricsLines = LyricsRenderer.ParseLyrics(currentLyrics, _lastSongTitle);
 
                 // 只在歌词行数变化时记录日志
                 if (_lyricsLines.Count != _lastLyricsLineCount)
