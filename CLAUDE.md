@@ -1,13 +1,9 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+# TaskbarLyrics Plugin - 项目目录理解
 
 ## 项目概述
+TaskbarLyricsPlugin 是一个基于 C#/.NET 8 和 WPF 的 Windows 任务栏歌词显示应用程序。该应用程序在 Windows 任务栏上显示当前播放歌曲的歌词，并支持逐字高亮、翻译显示和多种自定义选项。
 
-TaskbarLyricsPlugin-resources 是一个基于 C#/.NET 8 和 WPF 的 Windows 任务栏歌词显示应用程序。该应用程序在 Windows 任务栏上显示当前播放歌曲的歌词，并支持逐字高亮、翻译显示和多种自定义选项。
-
-## 技术栈
-
+## 技术架构
 - **.NET 8** (target framework: net8.0-windows)
 - **WPF** (Windows Presentation Foundation) - 用户界面框架
 - **Windows Forms** - 用于系统托盘图标和全屏检测定时器
@@ -33,6 +29,94 @@ dotnet publish -c Release -r win-x64 --self-contained false
 ./watchlog.bat
 ```
 
+## 目录结构分析
+
+### 根目录文件
+- **TaskbarLyrics.csproj** - 项目文件，定义了依赖项和构建配置
+- **App.xaml / App.xaml.cs** - 应用程序入口点，负责系统托盘管理、全局异常处理和配置初始化
+- **MainWindow.xaml / MainWindow.xaml.cs** - 主窗口，负责歌词显示、播放控制和用户交互
+- **SettingsWindow.xaml / SettingsWindow.xaml.cs** - 设置配置窗口
+- **AboutWindow.xaml / AboutWindow.xaml.cs** - 关于信息窗口
+- **packages.config** - NuGet 包配置
+- **watchlog.bat** - 用于监控调试日志的批处理文件
+
+### 核心类文件
+- **LyricsApiService.cs** - API服务层，与本地歌词API服务器（端口35374）通信
+- **ConfigManager.cs** - 配置管理器，处理用户设置的保存和加载
+- **LyricsRenderer.cs** - 歌词渲染引擎，解析LRC格式歌词并实现逐字动画效果
+- **TaskbarMonitor.cs** - Windows API封装，管理任务栏位置检测和窗口样式设置
+- **FullScreenDetector.cs** - 全屏检测器，检测全屏应用并自动隐藏歌词
+- **Logger.cs** - 日志系统，支持多级别日志和重复消息过滤
+
+### Models 文件夹
+包含API响应和数据模型：
+- **ConfigResponse.cs** - 配置响应模型（实际上是LyricsConfig的定义）
+- **LyricsResponse.cs** - 歌词API响应模型
+- **NowPlayingResponse.cs** - 播放状态响应模型
+- **WordTiming.cs** - 歌词行和词语时间模型
+
+### 关键功能模块
+
+#### 1. 窗口管理 (TaskbarMonitor)
+- 获取Windows任务栏位置和大小
+- 设置窗口为透明、置顶、鼠标穿透等特殊样式
+- 处理DPI缩放，确保在不同显示器上正确显示
+
+#### 2. 歌词渲染系统 (LyricsRenderer)
+- 解析LRC格式歌词（支持时间戳）
+- 生成逐字同步的时间轴
+- 实现平滑的渐变高亮动画
+- 支持双语显示（原文+翻译）
+- 过滤非歌词内容（制作人信息等）
+
+#### 3. API通信 (LyricsApiService)
+- 与本地API服务器（localhost:35374）通信
+- 提供歌词获取、播放控制等功能
+- 错误处理和备用API端点
+
+#### 4. 配置管理 (ConfigManager)
+- JSON配置文件的读写
+- 用户设置的持久化
+- 配置位置：%AppData%/TaskbarLyrics/config.json
+
+#### 5. 定时器系统
+- _nowPlayingTimer (50ms) - 高频更新播放位置，确保歌词同步精确
+- _smoothUpdateTimer (32ms) - 管理歌词的平滑显示和动画效果
+- _positionTimer (2s) - 同步窗口位置，跟随任务栏变化
+- _restoreTimer (100ms) - 维护窗口置顶和可见状态
+- _mouseLeaveTimer (300ms) - 处理鼠标离开事件
+
+## 数据流程
+
+### 1. 歌词获取流程
+- UpdateNowPlaying 检测歌曲变化
+- 歌曲变化时调用 UpdateLyrics
+- 从API获取歌词文本
+- LyricsRenderer 解析LRC歌词
+- 过滤非歌词内容
+- 生成逐字时间轴
+
+### 2. 显示流程
+- SmoothUpdateLyrics 定期更新当前显示
+- UpdateCurrentLyricsLine 选择正确的歌词行
+- CreateDualLineLyricsVisual 创建视觉元素
+- 实现渐变高亮动画
+
+### 3. 窗口管理流程
+- 初始化时嵌入任务栏
+- 定时同步位置跟随任务栏
+- 全屏时自动隐藏
+- 始终保持置顶状态
+
+## API依赖
+项目依赖于本地运行的歌词API服务器（端口35374）：
+- 不再使用配置API，配置完全本地化
+- 主要API端点：
+  - `/api/lyric` - 获取内置歌词
+  - `/api/lyricfile` - 获取歌词文件
+  - `/api/now-playing` - 获取播放状态
+  - `/api/play-pause` - 播放控制
+
 ## 架构和核心组件
 
 ### 主要架构模式
@@ -49,7 +133,7 @@ dotnet publish -c Release -r win-x64 --self-contained false
    - 右键菜单（字体、颜色、对齐、翻译设置）
 
 2. **MainWindow.xaml.cs** - 主窗口和歌词显示
-   - 多个定时器管理（歌词更新、位置同步、动画）
+   - 定时器管理（位置同步、动画、播放控制）
    - 歌词渲染和同步
    - 播放控制（播放/暂停、上一首、下一首）
    - 鼠标交互处理
@@ -93,7 +177,7 @@ dotnet publish -c Release -r win-x64 --self-contained false
    - `ConfigResponse.cs` - 配置响应模型
    - `WordTiming.cs` - 词语时间同步模型
 
-### 关键特性
+### 特色功能
 
 1. **逐字同步动画**：使用精确的时间戳实现词语级别的同步高亮
 2. **多语言支持**：特别优化了 CJK 字符的渲染和动画
@@ -104,8 +188,9 @@ dotnet publish -c Release -r win-x64 --self-contained false
 7. **智能日志**：支持多级别日志和重复消息过滤
 8. **歌词过滤**：使用正则表达式过滤非歌词内容（如制作人信息）
 9. **歌曲标题显示**：自动在歌词列表第一项显示当前歌曲标题
+10. **动态歌词更新**：歌曲变化时自动触发歌词更新，不使用定时轮询
 
-### 开发注意事项
+## 开发注意事项
 
 1. **窗口管理**：应用程序使用特殊的窗口样式来嵌入任务栏，需要小心处理窗口状态
 2. **定时器管理**：多个 DispatcherTimer 需要在窗口关闭时正确清理
@@ -142,3 +227,58 @@ dotnet publish -c Release -r win-x64 --self-contained false
 - `SettingsWindow.xaml` - 设置配置窗口
 - `AboutWindow.xaml` - 关于信息窗口
 - `App.xaml` - 应用程序资源和启动配置
+
+## 重要更新说明
+
+### 歌词更新机制优化
+**修改内容**：
+- 移除了原有的 `_updateTimer` 定时器（800ms间隔）
+- 改为在 `UpdateNowPlaying` 中检测到歌曲变化时才触发 `UpdateLyrics`
+- 减少了不必要的API调用，提高了性能
+
+**优势**：
+- 歌词更新更加精确，只在歌曲切换时执行
+- 避免了定时器轮询导致的资源浪费
+- 提高了响应速度，歌曲切换时歌词立即更新
+
+### 定时器调整
+现有的定时器配置：
+- **保留的定时器**：
+  - `_nowPlayingTimer` (50ms) - 高频更新播放位置
+  - `_smoothUpdateTimer` (32ms) - 歌词动画和显示更新
+  - `_positionTimer` (2s) - 窗口位置同步
+  - `_restoreTimer` (100ms) - 窗口状态维护
+  - `_mouseLeaveTimer` (300ms) - 鼠标离开处理
+
+- **移除的定时器**：
+  - `_updateTimer` - 原本用于定期检查歌词变化
+
+### 配置管理说明
+- **本地化设计**：配置完全依赖本地文件系统，不再从API获取
+- **配置位置**：`%AppData%/TaskbarLyrics/config.json`
+- **实时生效**：设置窗口中的更改会立即保存和应用
+
+## 构建和部署
+
+### 构建命令
+```bash
+# 构建项目
+dotnet build
+
+# 运行项目（开发模式）
+dotnet run
+
+# 发布为自包含的可执行文件（包含 .NET 运行时）
+dotnet publish -c Release -r win-x64 --self-contained
+
+# 发布为依赖运行时的版本（需要目标机器安装 .NET 8 运行时）
+dotnet publish -c Release -r win-x64 --self-contained false
+```
+
+### 依赖包
+- Newtonsoft.Json 13.0.3 - JSON序列化
+
+### 输出
+- 单个可执行文件
+- 依赖.NET 8运行时
+- Windows平台专用
