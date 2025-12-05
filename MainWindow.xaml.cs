@@ -143,7 +143,6 @@ namespace TaskbarLyrics
         /// <summary>
         /// 设置所有定时器
         /// 每个定时器负责不同的功能，确保程序的各种操作按时执行
-        /// 歌词更新改为在歌曲变化时触发，不再使用定时器
         /// </summary>
         private void SetupTimers()
         {
@@ -155,6 +154,11 @@ namespace TaskbarLyrics
 
             // 播放状态更新定时器 - 每50ms更新一次播放状态
             // 使用高频更新以确保歌词同步的精确性
+
+            // 这是真tm的屎山，高频的http请求浪费大量资源
+            // 已经优化掉两个高频的http请求了，剩下这个不好改
+            // 不知道原作者为啥要这样实现，最好能改成sse或者websocket
+            // 但是需要配合插件端更改，先不动这个了，目前没有精力维护
             _nowPlayingTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
             _nowPlayingTimer.Tick += async (s, e) => await UpdateNowPlaying();
             _nowPlayingTimer.Start();
