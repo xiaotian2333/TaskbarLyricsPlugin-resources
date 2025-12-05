@@ -28,7 +28,6 @@ namespace TaskbarLyrics
         private LyricsApiService _apiService;
 
         // 定时器管理 - 用于不同功能的时间控制
-        private DispatcherTimer _positionTimer;    // 窗口位置同步定时器（2秒间隔）
         private DispatcherTimer _restoreTimer;     // 窗口状态恢复定时器（100ms间隔）
         private DispatcherTimer _nowPlayingTimer;  // 播放状态更新定时器（50ms间隔）
         private DispatcherTimer _mouseLeaveTimer;  // 鼠标离开延迟处理定时器（300ms间隔）
@@ -93,7 +92,6 @@ namespace TaskbarLyrics
             _isClosing = true;
 
             // 停止所有定时器，防止内存泄漏
-            _positionTimer?.Stop();
             _restoreTimer?.Stop();
             _nowPlayingTimer?.Stop();
             _smoothUpdateTimer?.Stop();
@@ -149,12 +147,6 @@ namespace TaskbarLyrics
         /// </summary>
         private void SetupTimers()
         {
-            // 窗口位置同步定时器 - 每2秒同步一次窗口位置
-            // 确保歌词窗口始终跟随任务栏的位置变化
-            _positionTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-            _positionTimer.Tick += (s, e) => UpdateWindowPosition();
-            _positionTimer.Start();
-
             // 窗口状态恢复定时器 - 每100ms检查并恢复窗口状态
             // 确保窗口始终保持置顶和可见状态
             _restoreTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
@@ -530,12 +522,6 @@ namespace TaskbarLyrics
                 LyricsContent.Content = null;
             }
             _lyricsLines.Clear();
-        }
-
-        private void UpdateWindowPosition()
-        {
-            if (_isClosing) return;
-            ApplyPositionOffset();
         }
 
         private void ApplyPositionOffset()
