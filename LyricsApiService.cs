@@ -19,9 +19,8 @@ namespace TaskbarLyrics
         private readonly HttpClient _httpClient;
 
         // API端点常量 - 本地API服务器地址（端口35374）
-        private const string LyricsApiUrl = "http://localhost:35374/api/lyric";           // 获取本地歌词
-        private const string LyricsPwApiUrl = "http://localhost:35374/api/lyricfile";    // 获取联网搜索的歌词
-        private const string ConfigApiUrl = "http://localhost:35374/api/config";         // 获取/设置配置
+        private const string LyricsApiUrl = "http://localhost:35374/api/lyric";           // 获取音乐内置歌词
+        private const string LyricsPwApiUrl = "http://localhost:35374/api/lyricfile";    // 获取LCR歌词文件
         private const string NowPlayingApiUrl = "http://localhost:35374/api/now-playing"; // 获取当前播放信息
         private const string PlayPauseApiUrl = "http://localhost:35374/api/play-pause";    // 播放/暂停
         private const string NextTrackApiUrl = "http://localhost:35374/api/next-track";     // 下一首

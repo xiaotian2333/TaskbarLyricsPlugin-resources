@@ -28,7 +28,6 @@ namespace TaskbarLyrics
         private LyricsApiService _apiService;
 
         // 定时器管理 - 用于不同功能的时间控制
-        private DispatcherTimer _updateTimer;      // 歌词更新定时器（800ms间隔）
         private DispatcherTimer _positionTimer;    // 窗口位置同步定时器（2秒间隔）
         private DispatcherTimer _restoreTimer;     // 窗口状态恢复定时器（100ms间隔）
         private DispatcherTimer _nowPlayingTimer;  // 播放状态更新定时器（50ms间隔）
@@ -94,7 +93,6 @@ namespace TaskbarLyrics
             _isClosing = true;
 
             // 停止所有定时器，防止内存泄漏
-            _updateTimer?.Stop();
             _positionTimer?.Stop();
             _restoreTimer?.Stop();
             _nowPlayingTimer?.Stop();
@@ -147,15 +145,10 @@ namespace TaskbarLyrics
         /// <summary>
         /// 设置所有定时器
         /// 每个定时器负责不同的功能，确保程序的各种操作按时执行
+        /// 歌词更新改为在歌曲变化时触发，不再使用定时器
         /// </summary>
         private void SetupTimers()
         {
-            // 歌词更新定时器 - 每800ms检查一次歌词变化
-            // 使用较长的间隔是因为歌词内容通常不会频繁变化
-            _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
-            _updateTimer.Tick += async (s, e) => await UpdateLyrics();
-            _updateTimer.Start();
-
             // 窗口位置同步定时器 - 每2秒同步一次窗口位置
             // 确保歌词窗口始终跟随任务栏的位置变化
             _positionTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
@@ -200,7 +193,7 @@ namespace TaskbarLyrics
         /// 更新当前播放状态
         /// 高频执行（每50ms），负责：
         /// 1. 获取当前播放位置
-        /// 2. 检测歌曲变化
+        /// 2. 检测歌曲变化，并在变化时触发歌词更新
         /// 3. 更新播放按钮状态
         /// </summary>
         private async Task UpdateNowPlaying()
@@ -228,6 +221,9 @@ namespace TaskbarLyrics
                         _lyricsLines.Clear();   // 清空解析的歌词列表
                         _lastLyricsLine = null; // 重置歌词行跟踪
                         _forceRefresh = true;   // 设置强制刷新标志
+
+                        // 歌曲变化时触发歌词更新（不再使用定时器）
+                        await UpdateLyrics();
                     }
 
                     // 更新播放/暂停按钮的图标
@@ -411,6 +407,10 @@ namespace TaskbarLyrics
             ApplyAlignment();
         }
 
+        /// <summary>
+        /// 更新歌词
+        /// 当歌曲变化时被调用，从API获取并更新歌词
+        /// </summary>
         private async Task UpdateLyrics()
         {
             if (_isClosing) return;
