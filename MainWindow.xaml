@@ -20,16 +20,9 @@
                 VerticalAlignment="Center"
                 MouseEnter="LyricsContainer_MouseEnter"
                 MouseLeave="LyricsContainer_MouseLeave">
-            <ScrollViewer x:Name="LyricsScrollViewer"
-                          HorizontalScrollBarVisibility="Hidden"
-                          VerticalScrollBarVisibility="Disabled"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          CanContentScroll="False">
-                <ContentControl x:Name="LyricsContent"
+            <ContentControl x:Name="LyricsContent"
                                HorizontalAlignment="Left"
                                VerticalAlignment="Center"/>
-            </ScrollViewer>
         </Border>
         
         <Border x:Name="ControlPanelBorder"

@@ -529,20 +529,7 @@
                                          Text="800"
                                          FontSize="13"
                                          VerticalContentAlignment="Center"/>
-                                <TextBlock Text="启用自动滚动"
-                                           FontSize="14"
-                                           FontWeight="SemiBold"
-                                           VerticalAlignment="Center"
-                                           Margin="30,0,10,0"/>
-                                <CheckBox x:Name="EnableLyricsScrollCheckBox"
-                                          Content=""
-                                          IsChecked="True"
-                                          VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <TextBlock Text="当歌词超过设置宽度时，自动滚动显示。宽度为0表示不限制。"
-                                       FontSize="12"
-                                       Foreground="#666666"
-                                       TextWrapping="Wrap"/>
+                                                            </StackPanel>
 
                             <CheckBox x:Name="EnableLyricsFilterCheckBox"
                                       Content="启用歌词过滤"

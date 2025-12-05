@@ -60,8 +60,5 @@ namespace TaskbarLyrics.Models
 
         [JsonPropertyName("lyrics_width")]
         public int LyricsWidth { get; set; } = 800;
-
-        [JsonPropertyName("enable_lyrics_scroll")]
-        public bool EnableLyricsScroll { get; set; } = true;
     }
 }

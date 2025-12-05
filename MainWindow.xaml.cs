@@ -27,12 +27,12 @@ namespace TaskbarLyrics
         private bool _isMouseOver = false;
         private DispatcherTimer _mouseLeaveTimer;
         private DispatcherTimer _smoothUpdateTimer;
-        private DispatcherTimer _scrollTimer;
         private bool _isClosing = false;
         private string _lastSongTitle = ""; // 用于检测歌曲变化
-        private double _scrollOffset = 0;
-        private int _scrollDirection = 1; // 1 for right, -1 for left
-        private bool _isScrolling = false;
+        private LyricsLine _lastLyricsLine = null; // 用于检测歌词行变化
+        // 缓存机制相关变量
+        private string _lastCachedLyricsKey = "";
+        private FrameworkElement _lastCachedVisual = null;
 
         public MainWindow()
         {
@@ -60,7 +60,6 @@ namespace TaskbarLyrics
             _restoreTimer?.Stop();
             _nowPlayingTimer?.Stop();
             _smoothUpdateTimer?.Stop();
-            _scrollTimer?.Stop();
             _mouseLeaveTimer?.Stop();
 
             FullScreenDetector.Stop();
@@ -94,52 +93,27 @@ namespace TaskbarLyrics
 
         private void SetupTimers()
         {
-            _updateTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(800)
-            };
+            _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
             _updateTimer.Tick += async (s, e) => await UpdateLyrics();
             _updateTimer.Start();
 
-            _positionTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(2)
-            };
+            _positionTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _positionTimer.Tick += (s, e) => UpdateWindowPosition();
             _positionTimer.Start();
 
-            _restoreTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(100)
-            };
+            _restoreTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
             _restoreTimer.Tick += (s, e) => EnsureWindowOnTop();
             _restoreTimer.Start();
 
-            _nowPlayingTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(50)
-            };
+            _nowPlayingTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
             _nowPlayingTimer.Tick += async (s, e) => await UpdateNowPlaying();
             _nowPlayingTimer.Start();
 
-            _smoothUpdateTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(32)
-            };
+            _smoothUpdateTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(32) };
             _smoothUpdateTimer.Tick += (s, e) => SmoothUpdateLyrics();
             _smoothUpdateTimer.Start();
 
-            _scrollTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(30)
-            };
-            _scrollTimer.Tick += (s, e) => UpdateScroll();
-            _scrollTimer.Start();
-
-            _mouseLeaveTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(300)
-            };
+            _mouseLeaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
             _mouseLeaveTimer.Tick += (s, e) =>
             {
                 _mouseLeaveTimer.Stop();
@@ -171,6 +145,7 @@ namespace TaskbarLyrics
                         ClearLyrics();
                         _lastLyricsText = "";
                         _lyricsLines.Clear();
+                        _lastLyricsLine = null; // 重置歌词行跟踪
                         _forceRefresh = true; // 强制刷新歌词
                     }
 
@@ -306,7 +281,6 @@ namespace TaskbarLyrics
 
             // 应用歌词宽度限制
             LyricsContainer.MaxWidth = config.LyricsWidth;
-            LyricsScrollViewer.MaxWidth = config.LyricsWidth;
 
             ApplyAlignment();
         }
@@ -319,7 +293,7 @@ namespace TaskbarLyrics
 
             HorizontalAlignment alignment = HorizontalAlignment.Center;
             Thickness margin = new Thickness(0);
-            
+
             switch (config.Alignment.ToLower())
             {
                 case "left":
@@ -337,7 +311,7 @@ namespace TaskbarLyrics
 
             LyricsContainer.HorizontalAlignment = alignment;
             ControlPanelBorder.HorizontalAlignment = alignment;
-            
+
             LyricsContainer.Margin = margin;
             ControlPanelBorder.Margin = margin;
 
@@ -376,6 +350,10 @@ namespace TaskbarLyrics
                 _lastLyricsText = currentLyrics;
                 _forceRefresh = false;
 
+                // 清空缓存，因为歌词已经变化
+                _lastCachedLyricsKey = "";
+                _lastCachedVisual = null;
+
                 // 只在歌词真正变化时才执行ParseLyrics，并传递歌曲标题
                 _lyricsLines = LyricsRenderer.ParseLyrics(currentLyrics, _lastSongTitle);
 
@@ -403,20 +381,55 @@ namespace TaskbarLyrics
             // 如果有歌词数据，尝试更新显示
             if (_lyricsLines != null && _lyricsLines.Count > 0)
             {
-                var currentLine = LyricsRenderer.GetCurrentLyricsLine(_lyricsLines, _currentPosition);
+                var currentLine = LyricsRenderer.GetCurrentLyricsLine(
+                    _lyricsLines,
+                    _currentPosition
+                );
                 if (currentLine != null)
                 {
+                    // 检查歌词行是否改变
+                    bool lyricsLineChanged =
+                        _lastLyricsLine?.OriginalText != currentLine.OriginalText;
+
+                    // 创建缓存键（基于歌词文本和位置）
+                    string cacheKey = $"{currentLine.OriginalText}_{_currentPosition:F0}";
+
                     var config = ConfigManager.CurrentConfig;
-                    var lyricsVisual = LyricsRenderer.CreateDualLineLyricsVisual(currentLine, config, ActualWidth, _currentPosition);
 
-                    if (LyricsContent.Content != lyricsVisual)
+                    // 检查缓存
+                    FrameworkElement lyricsVisual;
+                    if (cacheKey == _lastCachedLyricsKey && _lastCachedVisual != null)
                     {
-                        LyricsContent.Content = lyricsVisual;
+                        // 使用缓存
+                        lyricsVisual = _lastCachedVisual;
+                    }
+                    else
+                    {
+                        // 创建新的视觉对象并缓存
+                        lyricsVisual = LyricsRenderer.CreateDualLineLyricsVisual(
+                            currentLine, config, ActualWidth, _currentPosition);
+                        _lastCachedVisual = lyricsVisual;
+                        _lastCachedLyricsKey = cacheKey;
+                    }
 
-                        // 重置滚动状态
-                        _scrollOffset = 0;
-                        _scrollDirection = 1;
-                        _isScrolling = false;
+                    // 只有当歌词行真正改变时才更新内容
+                    if (lyricsLineChanged)
+                    {
+                        // 更新歌词内容
+                        if (LyricsContent.Content != lyricsVisual)
+                        {
+                            LyricsContent.Content = lyricsVisual;
+                        }
+
+                        _lastLyricsLine = currentLine;
+                    }
+                    else
+                    {
+                        // 歌词行未改变，只检查是否需要更新内容
+                        if (LyricsContent.Content != lyricsVisual)
+                        {
+                            LyricsContent.Content = lyricsVisual;
+                        }
                     }
                 }
                 // 没有匹配的歌词行时，不清空显示，保持当前歌词
@@ -424,6 +437,7 @@ namespace TaskbarLyrics
             // 没有歌词数据时，也保持当前显示，不清空
         }
 
+        
         private void ClearLyrics()
         {
             if (!_isClosing)
@@ -445,57 +459,7 @@ namespace TaskbarLyrics
             TaskbarMonitor.PositionWindowOnTaskbar(this, config.PositionOffsetX, config.PositionOffsetY);
         }
 
-        private void UpdateScroll()
-        {
-            if (!ConfigManager.CurrentConfig.EnableLyricsScroll || _isClosing)
-                return;
-
-            // 检查歌词是否需要滚动
-            if (LyricsContent.ActualWidth > ConfigManager.CurrentConfig.LyricsWidth)
-            {
-                _isScrolling = true;
-
-                // 计算滚动速度
-                double scrollSpeed = 1.0;
-
-                // 更新滚动偏移
-                _scrollOffset += scrollSpeed * _scrollDirection;
-
-                // 检查是否需要改变滚动方向
-                if (_scrollOffset >= LyricsContent.ActualWidth - ConfigManager.CurrentConfig.LyricsWidth)
-                {
-                    _scrollOffset = LyricsContent.ActualWidth - ConfigManager.CurrentConfig.LyricsWidth;
-                    _scrollDirection = -1;
-                }
-                else if (_scrollOffset <= 0)
-                {
-                    _scrollOffset = 0;
-                    _scrollDirection = 1;
-                }
-
-                // 应用滚动偏移
-                if (LyricsContent.Content is FrameworkElement element)
-                {
-                    element.Margin = new Thickness(-_scrollOffset, 0, 0, 0);
-                }
-            }
-            else
-            {
-                // 如果不需要滚动，重置滚动状态
-                if (_isScrolling)
-                {
-                    _isScrolling = false;
-                    _scrollOffset = 0;
-                    _scrollDirection = 1;
-
-                    if (LyricsContent.Content is FrameworkElement element)
-                    {
-                        element.Margin = new Thickness(0);
-                    }
-                }
-            }
-        }
-
+        
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
@@ -505,7 +469,7 @@ namespace TaskbarLyrics
         protected override void OnStateChanged(EventArgs e)
         {
             base.OnStateChanged(e);
-            
+
             if (this.WindowState != WindowState.Normal && !_isClosing)
             {
                 this.WindowState = WindowState.Normal;
@@ -573,7 +537,7 @@ namespace TaskbarLyrics
 
             _isMouseOver = true;
             _mouseLeaveTimer.Stop();
-            
+
             ControlPanelBorder.Visibility = Visibility.Visible;
             LyricsContent.Visibility = Visibility.Collapsed;
         }

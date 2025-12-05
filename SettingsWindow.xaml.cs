@@ -109,7 +109,6 @@ namespace TaskbarLyrics
 
             // 加载歌词宽度配置
             LyricsWidthTextBox.Text = config.LyricsWidth.ToString();
-            EnableLyricsScrollCheckBox.IsChecked = config.EnableLyricsScroll;
 
             // 加载日志级别配置
             SelectColorInComboBox(LogLevelComboBox, config.LogLevel?.ToLower() ?? "auto");
@@ -188,7 +187,6 @@ namespace TaskbarLyrics
             {
                 config.LyricsWidth = Math.Max(0, width); // 确保宽度不为负
             }
-            config.EnableLyricsScroll = EnableLyricsScrollCheckBox.IsChecked ?? true;
 
             if (LogLevelComboBox.SelectedItem is ComboBoxItem logLevelItem)
             {
