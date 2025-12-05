@@ -11,50 +11,89 @@ using TaskbarLyrics.Models;
 
 namespace TaskbarLyrics
 {
+    /// <summary>
+    /// 主窗口类 - 负责在Windows任务栏上显示歌词
+    /// 主要功能：
+    /// 1. 从本地API获取歌词数据并显示
+    /// 2. 实现逐字同步动画效果
+    /// 3. 提供播放控制功能
+    /// 4. 支持自定义字体、颜色和对齐方式
+    /// 5. 全屏时自动隐藏
+    /// </summary>
     public partial class MainWindow : Window
     {
-        private LyricsApiService _apiService;
-        private DispatcherTimer _updateTimer;
-        private DispatcherTimer _positionTimer;
-        private DispatcherTimer _restoreTimer;
-        private DispatcherTimer _nowPlayingTimer;
-        private List<LyricsLine> _lyricsLines = new List<LyricsLine>();
-        private string _lastLyricsText = "";
-        private bool _forceRefresh = false;
-        private int _currentPosition = 0;
-        private int _lastLyricsLineCount = 0; // 用于避免重复的歌词解析日志
-        private bool _isPlaying = false;
-        private bool _isMouseOver = false;
-        private DispatcherTimer _mouseLeaveTimer;
-        private DispatcherTimer _smoothUpdateTimer;
-        private bool _isClosing = false;
-        private string _lastSongTitle = ""; // 用于检测歌曲变化
-        private LyricsLine _lastLyricsLine = null; // 用于检测歌词行变化
-        // 缓存机制相关变量
-        private string _lastCachedLyricsKey = "";
-        private FrameworkElement _lastCachedVisual = null;
+        #region 私有字段
 
+        // API服务 - 用于与本地歌词API服务器通信
+        private LyricsApiService _apiService;
+
+        // 定时器管理 - 用于不同功能的时间控制
+        private DispatcherTimer _updateTimer;      // 歌词更新定时器（800ms间隔）
+        private DispatcherTimer _positionTimer;    // 窗口位置同步定时器（2秒间隔）
+        private DispatcherTimer _restoreTimer;     // 窗口状态恢复定时器（100ms间隔）
+        private DispatcherTimer _nowPlayingTimer;  // 播放状态更新定时器（50ms间隔）
+        private DispatcherTimer _mouseLeaveTimer;  // 鼠标离开延迟处理定时器（300ms间隔）
+        private DispatcherTimer _smoothUpdateTimer; // 平滑更新定时器（32ms间隔，约30FPS）
+
+        // 歌词数据管理
+        private List<LyricsLine> _lyricsLines = new List<LyricsLine>();  // 解析后的歌词行列表
+        private string _lastLyricsText = "";      // 上次获取的歌词文本，用于避免重复解析
+        private bool _forceRefresh = false;       // 强制刷新标志，用于需要立即更新歌词的场景
+        private int _currentPosition = 0;         // 当前播放位置（毫秒）
+        private int _lastLyricsLineCount = 0;     // 上次歌词行数，用于避免重复的日志输出
+        private bool _isPlaying = false;          // 当前播放状态
+
+        // 窗口和鼠标状态
+        private bool _isClosing = false;          // 窗口是否正在关闭
+        private bool _isMouseOver = false;        // 鼠标是否悬停在窗口上
+
+        // 歌词变化检测
+        private string _lastSongTitle = "";       // 上次的歌曲标题，用于检测歌曲变化
+        private LyricsLine _lastLyricsLine = null; // 上次的歌词行，用于检测歌词行变化
+
+        // 渲染缓存 - 优化性能，避免重复创建相同的视觉元素
+        private string _lastCachedLyricsKey = "";     // 缓存键（歌词内容+位置）
+        private FrameworkElement _lastCachedVisual = null; // 缓存的视觉元素
+
+        #endregion
+
+        #region 构造函数与窗口事件
+
+        /// <summary>
+        /// 主窗口构造函数
+        /// 初始化所有必要的组件和服务
+        /// </summary>
         public MainWindow()
         {
             InitializeComponent();
 
+            // 初始化API服务，用于与本地歌词API服务器通信
             _apiService = new LyricsApiService();
 
-            this.IsVisibleChanged += MainWindow_IsVisibleChanged;
-            this.Closing += MainWindow_Closing;
+            // 订阅窗口事件
+            this.IsVisibleChanged += MainWindow_IsVisibleChanged;  // 窗口可见性变化事件
+            this.Closing += MainWindow_Closing;                    // 窗口关闭事件
 
-            InitializeWindow();
-            SetupTimers();
-            SetupFullScreenDetection();
+            // 初始化核心功能
+            InitializeWindow();          // 初始化窗口属性和样式
+            SetupTimers();              // 设置所有定时器
+            SetupFullScreenDetection(); // 设置全屏检测
 
-            this.Focusable = true;
-            this.IsHitTestVisible = true;
+            // 设置窗口交互属性
+            this.Focusable = true;        // 允许窗口获得焦点
+            this.IsHitTestVisible = true; // 允许鼠标交互
         }
 
+        /// <summary>
+        /// 窗口关闭事件处理程序
+        /// 清理所有资源，停止定时器和服务
+        /// </summary>
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            // 设置关闭标志，通知其他方法停止处理
             _isClosing = true;
 
+            // 停止所有定时器，防止内存泄漏
             _updateTimer?.Stop();
             _positionTimer?.Stop();
             _restoreTimer?.Stop();
@@ -62,25 +101,37 @@ namespace TaskbarLyrics
             _smoothUpdateTimer?.Stop();
             _mouseLeaveTimer?.Stop();
 
+            // 停止全屏检测服务
             FullScreenDetector.Stop();
         }
 
+        #endregion
+
+        /// <summary>
+        /// 窗口可见性变化事件处理程序
+        /// 确保窗口在全屏模式下不会自动恢复显示
+        /// </summary>
         private void MainWindow_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
+            // 如果窗口正在关闭，不做任何处理
             if (_isClosing)
                 return;
 
             // 如果全屏检测正在运行且已检测到全屏，不要自动恢复可见性
+            // 这样可以避免在全屏应用（如游戏、视频播放器）运行时弹出歌词
             if (FullScreenDetector.IsFullScreenActive && ConfigManager.CurrentConfig.HideOnFullscreen)
             {
                 Logger.Info("全屏模式激活，跳过自动可见性恢复");
                 return;
             }
 
+            // 如果窗口不可见，尝试自动恢复可见性
+            // 使用异步调用避免与UI线程冲突
             if (!this.IsVisible)
             {
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
+                    // 双重检查确保窗口确实需要恢复且未关闭
                     if (!_isClosing && !this.IsVisible)
                     {
                         this.Visibility = Visibility.Visible;
@@ -91,32 +142,51 @@ namespace TaskbarLyrics
             }
         }
 
+        #region 定时器设置
+
+        /// <summary>
+        /// 设置所有定时器
+        /// 每个定时器负责不同的功能，确保程序的各种操作按时执行
+        /// </summary>
         private void SetupTimers()
         {
+            // 歌词更新定时器 - 每800ms检查一次歌词变化
+            // 使用较长的间隔是因为歌词内容通常不会频繁变化
             _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
             _updateTimer.Tick += async (s, e) => await UpdateLyrics();
             _updateTimer.Start();
 
+            // 窗口位置同步定时器 - 每2秒同步一次窗口位置
+            // 确保歌词窗口始终跟随任务栏的位置变化
             _positionTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _positionTimer.Tick += (s, e) => UpdateWindowPosition();
             _positionTimer.Start();
 
+            // 窗口状态恢复定时器 - 每100ms检查并恢复窗口状态
+            // 确保窗口始终保持置顶和可见状态
             _restoreTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
             _restoreTimer.Tick += (s, e) => EnsureWindowOnTop();
             _restoreTimer.Start();
 
+            // 播放状态更新定时器 - 每50ms更新一次播放状态
+            // 使用高频更新以确保歌词同步的精确性
             _nowPlayingTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
             _nowPlayingTimer.Tick += async (s, e) => await UpdateNowPlaying();
             _nowPlayingTimer.Start();
 
+            // 平滑更新定时器 - 每32ms更新一次（约30FPS）
+            // 负责歌词的平滑显示和动画效果
             _smoothUpdateTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(32) };
             _smoothUpdateTimer.Tick += (s, e) => SmoothUpdateLyrics();
             _smoothUpdateTimer.Start();
 
+            // 鼠标离开延迟定时器 - 300ms延迟
+            // 用于检测鼠标是否真正离开窗口，避免误触发
             _mouseLeaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
             _mouseLeaveTimer.Tick += (s, e) =>
             {
                 _mouseLeaveTimer.Stop();
+                // 确保鼠标确实不在窗口上才隐藏控制面板
                 if (!_isMouseOver)
                 {
                     HideControlPanel();
@@ -124,31 +194,43 @@ namespace TaskbarLyrics
             };
         }
 
+        #endregion
+
+        /// <summary>
+        /// 更新当前播放状态
+        /// 高频执行（每50ms），负责：
+        /// 1. 获取当前播放位置
+        /// 2. 检测歌曲变化
+        /// 3. 更新播放按钮状态
+        /// </summary>
         private async Task UpdateNowPlaying()
         {
             try
             {
+                // 从API获取当前播放信息
                 var nowPlaying = await _apiService.GetNowPlayingAsync();
                 if (nowPlaying?.Status == "success")
                 {
+                    // 更新播放位置和状态
                     _currentPosition = nowPlaying.Position;
                     _isPlaying = nowPlaying.IsPlaying;
 
-                    // 检测歌曲变化
+                    // 检测歌曲变化 - 通过组合艺术家和标题来判断
                     string currentSongTitle = $"{nowPlaying.Artist} - {nowPlaying.Title}";
                     if (!string.IsNullOrEmpty(currentSongTitle) && currentSongTitle != _lastSongTitle)
                     {
                         Logger.Info($"检测到歌曲变化: {_lastSongTitle} -> {currentSongTitle}");
                         _lastSongTitle = currentSongTitle;
 
-                        // 歌曲变化时清空歌词，强制重新加载
-                        ClearLyrics();
-                        _lastLyricsText = "";
-                        _lyricsLines.Clear();
+                        // 歌曲变化时的清理工作
+                        ClearLyrics();           // 清空显示的歌词
+                        _lastLyricsText = "";   // 重置歌词文本缓存
+                        _lyricsLines.Clear();   // 清空解析的歌词列表
                         _lastLyricsLine = null; // 重置歌词行跟踪
-                        _forceRefresh = true; // 强制刷新歌词
+                        _forceRefresh = true;   // 设置强制刷新标志
                     }
 
+                    // 更新播放/暂停按钮的图标
                     PlayPauseButton.Content = _isPlaying ? "⏸" : "▶";
                 }
             }
@@ -222,8 +304,9 @@ namespace TaskbarLyrics
             ApplyConfig();
             _forceRefresh = true;
 
-            // 清理歌词渲染缓存，确保过滤规则立即生效
-            LyricsRenderer.ClearCache();
+            // 清理歌词渲染缓存，确保过滤规则立即生效（缓存机制已移至MainWindow）
+            // _lastCachedVisual = null;
+            // _lastCachedLyricsKey = "";
 
             // 应用位置偏移
             ApplyPositionOffset();
@@ -254,7 +337,9 @@ namespace TaskbarLyrics
         public void ForceRefreshLyrics()
         {
             _forceRefresh = true;
-            LyricsRenderer.ClearCache();
+            // 清空缓存以强制刷新
+            _lastCachedVisual = null;
+            _lastCachedLyricsKey = "";
         }
 
         private void ApplyConfig()
